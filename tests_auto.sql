@@ -26,8 +26,6 @@ INSERT INTO technician (
     email,
     phone,
     specialization,
-    hire_date,
-    hourly_rate,
     is_active,
     notes
 )
@@ -37,12 +35,9 @@ VALUES (
     'test.tech@example.com',
     '79000000011',
     'Laptop repair',
-    CURRENT_DATE,
-    1200.00,
     TRUE,
     'Тестовый мастер'
-)
-ON CONFLICT (email) DO NOTHING;
+);
 
 UPDATE test_ctx
 SET technician_id = (

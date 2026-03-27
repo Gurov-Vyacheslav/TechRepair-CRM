@@ -67,8 +67,6 @@ CREATE TABLE technician (
     email                VARCHAR(254) NOT NULL UNIQUE,
     phone                VARCHAR(20) NOT NULL UNIQUE,
     specialization       VARCHAR(100),
-    hire_date            DATE NOT NULL,
-    hourly_rate          NUMERIC(8,2) CHECK (hourly_rate >= 0),
     is_active            BOOLEAN NOT NULL DEFAULT TRUE,
     notes                TEXT
 );

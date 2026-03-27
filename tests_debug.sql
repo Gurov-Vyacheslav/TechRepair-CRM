@@ -40,8 +40,6 @@ INSERT INTO technician (
     email,
     phone,
     specialization,
-    hire_date,
-    hourly_rate,
     is_active,
     notes
 )
@@ -51,12 +49,9 @@ VALUES (
     'test.tech@example.com',
     '79000000011',
     'Laptop repair',
-    CURRENT_DATE,
-    1200.00,
     TRUE,
     'Тестовый мастер'
-)
-ON CONFLICT (email) DO NOTHING;
+);
 
 UPDATE test_ctx
 SET technician_id = (
@@ -512,3 +507,18 @@ SELECT 'are_all_order_services_completed' AS check_name,
 SELECT 'is_order_fully_paid' AS check_name,
        is_order_fully_paid((SELECT order_id FROM test_ctx)) AS result;
 	  
+TRUNCATE TABLE
+    order_status_history,
+    order_service,
+    order_part,
+    payment,
+    repair_order,
+    device,
+    client,
+    technician,
+    service,
+    part,
+    device_type
+RESTART IDENTITY CASCADE;
+
+DROP TABLE IF EXISTS test_ctx;
