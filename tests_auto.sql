@@ -1,5 +1,7 @@
 BEGIN;
 
+DROP TABLE IF EXISTS test_ctx;
+
 CREATE TEMP TABLE test_ctx (
     client_id       INT,
     device_id       INT,
@@ -37,7 +39,8 @@ VALUES (
     'Laptop repair',
     TRUE,
     'Тестовый мастер'
-);
+)
+ON CONFLICT (email) DO NOTHING;
 
 UPDATE test_ctx
 SET technician_id = (
@@ -194,6 +197,87 @@ BEGIN
     END IF;
 
     RAISE NOTICE 'OK: repair order created and initial status history written';
+END $$;
+
+-- =========================================================
+-- 3A. НОВЫЕ ЗАЩИТЫ: direct update repair_order запрещён
+-- =========================================================
+
+DO $$
+DECLARE
+    v_failed BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE repair_order
+        SET order_number = 'HACK-ORDER-NUMBER'
+        WHERE order_id = (SELECT order_id FROM test_ctx);
+    EXCEPTION WHEN OTHERS THEN
+        v_failed := TRUE;
+        RAISE NOTICE 'OK: direct update of order_number blocked: %', SQLERRM;
+    END;
+
+    IF NOT v_failed THEN
+        RAISE EXCEPTION 'FAIL: direct update of order_number must fail';
+    END IF;
+END $$;
+
+DO $$
+DECLARE
+    v_failed BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE repair_order
+        SET created_at = CURRENT_TIMESTAMP + INTERVAL '1 day'
+        WHERE order_id = (SELECT order_id FROM test_ctx);
+    EXCEPTION WHEN OTHERS THEN
+        v_failed := TRUE;
+        RAISE NOTICE 'OK: direct update of created_at blocked: %', SQLERRM;
+    END;
+
+    IF NOT v_failed THEN
+        RAISE EXCEPTION 'FAIL: direct update of created_at must fail';
+    END IF;
+END $$;
+
+DO $$
+DECLARE
+    v_failed BOOLEAN := FALSE;
+    v_accepted_status SMALLINT;
+BEGIN
+    SELECT status_id INTO v_accepted_status
+    FROM order_status
+    WHERE status_name = 'Accepted';
+
+    BEGIN
+        UPDATE repair_order
+        SET status_id = v_accepted_status
+        WHERE order_id = (SELECT order_id FROM test_ctx);
+    EXCEPTION WHEN OTHERS THEN
+        v_failed := TRUE;
+        RAISE NOTICE 'OK: direct update of status_id blocked: %', SQLERRM;
+    END;
+
+    IF NOT v_failed THEN
+        RAISE EXCEPTION 'FAIL: direct update of status_id must fail';
+    END IF;
+END $$;
+
+DO $$
+DECLARE
+    v_failed BOOLEAN := FALSE;
+BEGIN
+    BEGIN
+        UPDATE repair_order
+        SET accepted_at = CURRENT_TIMESTAMP
+        WHERE order_id = (SELECT order_id FROM test_ctx);
+    EXCEPTION WHEN OTHERS THEN
+        v_failed := TRUE;
+        RAISE NOTICE 'OK: direct update of accepted_at blocked: %', SQLERRM;
+    END;
+
+    IF NOT v_failed THEN
+        RAISE EXCEPTION 'FAIL: direct update of accepted_at must fail';
+    END IF;
 END $$;
 
 -- =========================================================
@@ -403,6 +487,59 @@ BEGIN
 END $$;
 
 -- =========================================================
+-- 11A. НОВЫЕ ЗАЩИТЫ: payment нельзя менять и удалять
+-- =========================================================
+
+DO $$
+DECLARE
+    v_payment_id INT;
+    v_failed BOOLEAN := FALSE;
+BEGIN
+    SELECT payment_id INTO v_payment_id
+    FROM payment
+    WHERE order_id = (SELECT order_id FROM test_ctx)
+    ORDER BY payment_date
+    LIMIT 1;
+
+    BEGIN
+        UPDATE payment
+        SET amount = 999.99
+        WHERE payment_id = v_payment_id;
+    EXCEPTION WHEN OTHERS THEN
+        v_failed := TRUE;
+        RAISE NOTICE 'OK: payment update blocked: %', SQLERRM;
+    END;
+
+    IF NOT v_failed THEN
+        RAISE EXCEPTION 'FAIL: payment update must be blocked';
+    END IF;
+END $$;
+
+DO $$
+DECLARE
+    v_payment_id INT;
+    v_failed BOOLEAN := FALSE;
+BEGIN
+    SELECT payment_id INTO v_payment_id
+    FROM payment
+    WHERE order_id = (SELECT order_id FROM test_ctx)
+    ORDER BY payment_date
+    LIMIT 1;
+
+    BEGIN
+        DELETE FROM payment
+        WHERE payment_id = v_payment_id;
+    EXCEPTION WHEN OTHERS THEN
+        v_failed := TRUE;
+        RAISE NOTICE 'OK: payment delete blocked: %', SQLERRM;
+    END;
+
+    IF NOT v_failed THEN
+        RAISE EXCEPTION 'FAIL: payment delete must be blocked';
+    END IF;
+END $$;
+
+-- =========================================================
 -- 12. ДОПЛАТА И ЗАКРЫТИЕ
 -- =========================================================
 
@@ -419,6 +556,59 @@ SELECT change_repair_order_status(
     'Closed'::VARCHAR,
     'Заказ закрыт после полной оплаты'::TEXT
 );
+
+-- =========================================================
+-- 12A. НОВЫЕ ЗАЩИТЫ: order_status_history append-only
+-- =========================================================
+
+DO $$
+DECLARE
+    v_history_id INT;
+    v_failed BOOLEAN := FALSE;
+BEGIN
+    SELECT history_id INTO v_history_id
+    FROM order_status_history
+    WHERE order_id = (SELECT order_id FROM test_ctx)
+    ORDER BY changed_at
+    LIMIT 1;
+
+    BEGIN
+        UPDATE order_status_history
+        SET comment = 'Попытка изменить историю'
+        WHERE history_id = v_history_id;
+    EXCEPTION WHEN OTHERS THEN
+        v_failed := TRUE;
+        RAISE NOTICE 'OK: order_status_history update blocked: %', SQLERRM;
+    END;
+
+    IF NOT v_failed THEN
+        RAISE EXCEPTION 'FAIL: order_status_history update must be blocked';
+    END IF;
+END $$;
+
+DO $$
+DECLARE
+    v_history_id INT;
+    v_failed BOOLEAN := FALSE;
+BEGIN
+    SELECT history_id INTO v_history_id
+    FROM order_status_history
+    WHERE order_id = (SELECT order_id FROM test_ctx)
+    ORDER BY changed_at
+    LIMIT 1;
+
+    BEGIN
+        DELETE FROM order_status_history
+        WHERE history_id = v_history_id;
+    EXCEPTION WHEN OTHERS THEN
+        v_failed := TRUE;
+        RAISE NOTICE 'OK: order_status_history delete blocked: %', SQLERRM;
+    END;
+
+    IF NOT v_failed THEN
+        RAISE EXCEPTION 'FAIL: order_status_history delete must be blocked';
+    END IF;
+END $$;
 
 -- =========================================================
 -- 13. НЕГАТИВ: нельзя менять закрытый заказ
@@ -444,53 +634,120 @@ BEGIN
 END $$;
 
 -- =========================================================
--- 14. КОНТРОЛЬНЫЕ SELECT
+-- 14. ПРОВЕРКА ВСПОМОГАТЕЛЬНЫХ ФУНКЦИЙ
 -- =========================================================
 
-SELECT 'vw_order_full_info' AS section, *
-FROM vw_order_full_info
-WHERE order_id = (SELECT order_id FROM test_ctx);
+DO $$
+DECLARE
+    v_has_services BOOLEAN;
+    v_all_completed BOOLEAN;
+    v_fully_paid BOOLEAN;
+BEGIN
+    SELECT has_order_services((SELECT order_id FROM test_ctx))
+    INTO v_has_services;
 
-SELECT 'vw_order_cost_breakdown' AS section, *
-FROM vw_order_cost_breakdown
-WHERE order_id = (SELECT order_id FROM test_ctx);
+    SELECT are_all_order_services_completed((SELECT order_id FROM test_ctx))
+    INTO v_all_completed;
 
-SELECT 'vw_order_payments' AS section, *
-FROM vw_order_payments
-WHERE order_id = (SELECT order_id FROM test_ctx);
+    SELECT is_order_fully_paid((SELECT order_id FROM test_ctx))
+    INTO v_fully_paid;
 
-SELECT 'vw_client_order_history' AS section, *
-FROM vw_client_order_history
-WHERE client_id = (SELECT client_id FROM test_ctx)
-ORDER BY created_at NULLS LAST;
+    IF NOT v_has_services THEN
+        RAISE EXCEPTION 'FAIL: has_order_services must return TRUE';
+    END IF;
 
-SELECT 'vw_repair_duration' AS section, *
-FROM vw_repair_duration
-WHERE order_id = (SELECT order_id FROM test_ctx);
+    IF NOT v_all_completed THEN
+        RAISE EXCEPTION 'FAIL: are_all_order_services_completed must return TRUE';
+    END IF;
 
-SELECT 'vw_technician_workload' AS section, *
-FROM vw_technician_workload
-WHERE technician_id = (SELECT technician_id FROM test_ctx);
+    IF NOT v_fully_paid THEN
+        RAISE EXCEPTION 'FAIL: is_order_fully_paid must return TRUE';
+    END IF;
 
-SELECT 'vw_service_statistics' AS section, *
-FROM vw_service_statistics
-WHERE service_id = (SELECT service_id FROM test_ctx);
+    RAISE NOTICE 'OK: helper functions return expected values';
+END $$;
 
-SELECT 'vw_part_usage_statistics' AS section, *
-FROM vw_part_usage_statistics
-WHERE part_id = (SELECT part_id FROM test_ctx);
+-- =========================================================
+-- 15. ПРОВЕРКА ПРЕДСТАВЛЕНИЙ БЕЗ ВЫВОДА ТАБЛИЦ
+-- =========================================================
 
-SELECT 'vw_unpaid_orders' AS section, *
-FROM vw_unpaid_orders
-WHERE order_id = (SELECT order_id FROM test_ctx);
+DO $$
+DECLARE
+    v_count INT;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM vw_order_full_info
+    WHERE order_id = (SELECT order_id FROM test_ctx);
 
-SELECT 'has_order_services' AS check_name,
-       has_order_services((SELECT order_id FROM test_ctx)) AS result;
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'FAIL: vw_order_full_info must contain exactly 1 row for test order';
+    END IF;
 
-SELECT 'are_all_order_services_completed' AS check_name,
-       are_all_order_services_completed((SELECT order_id FROM test_ctx)) AS result;
+    SELECT COUNT(*) INTO v_count
+    FROM vw_order_cost_breakdown
+    WHERE order_id = (SELECT order_id FROM test_ctx);
 
-SELECT 'is_order_fully_paid' AS check_name,
-       is_order_fully_paid((SELECT order_id FROM test_ctx)) AS result;
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'FAIL: vw_order_cost_breakdown must contain exactly 1 row for test order';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM vw_order_payments
+    WHERE order_id = (SELECT order_id FROM test_ctx);
+
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'FAIL: vw_order_payments must contain exactly 1 row for test order';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM vw_client_order_history
+    WHERE client_id = (SELECT client_id FROM test_ctx);
+
+    IF v_count < 1 THEN
+        RAISE EXCEPTION 'FAIL: vw_client_order_history must contain at least 1 row for test client';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM vw_repair_duration
+    WHERE order_id = (SELECT order_id FROM test_ctx);
+
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'FAIL: vw_repair_duration must contain exactly 1 row for test order';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM vw_technician_workload
+    WHERE technician_id = (SELECT technician_id FROM test_ctx);
+
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'FAIL: vw_technician_workload must contain exactly 1 row for test technician';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM vw_service_statistics
+    WHERE service_id = (SELECT service_id FROM test_ctx);
+
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'FAIL: vw_service_statistics must contain exactly 1 row for test service';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM vw_part_usage_statistics
+    WHERE part_id = (SELECT part_id FROM test_ctx);
+
+    IF v_count <> 1 THEN
+        RAISE EXCEPTION 'FAIL: vw_part_usage_statistics must contain exactly 1 row for test part';
+    END IF;
+
+    SELECT COUNT(*) INTO v_count
+    FROM vw_unpaid_orders
+    WHERE order_id = (SELECT order_id FROM test_ctx);
+
+    IF v_count <> 0 THEN
+        RAISE EXCEPTION 'FAIL: fully paid closed test order must not appear in vw_unpaid_orders';
+    END IF;
+
+    RAISE NOTICE 'OK: views passed validation checks';
+END $$;
 
 ROLLBACK;
