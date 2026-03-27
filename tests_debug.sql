@@ -12,6 +12,8 @@ TRUNCATE TABLE
     device_type
 RESTART IDENTITY CASCADE;
 
+DROP TABLE IF EXISTS test_ctx;
+
 CREATE TEMP TABLE test_ctx (
     client_id       INT,
     device_id       INT,
