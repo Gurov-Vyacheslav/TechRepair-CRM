@@ -293,6 +293,9 @@ CREATE TABLE payment (
         REFERENCES repair_order(order_id)
         ON DELETE RESTRICT
 );
+CREATE UNIQUE INDEX ux_payment_transaction_number
+    ON payment(transaction_number)
+    WHERE transaction_number IS NOT NULL;
 
 CREATE INDEX idx_payment_order_id
     ON payment(order_id);
