@@ -159,7 +159,7 @@ CREATE TABLE order_status_history (
     CONSTRAINT fk_order_status_history_order
         FOREIGN KEY (order_id)
         REFERENCES repair_order(order_id)
-        ON DELETE CASCADE,
+        ON DELETE RESTRICT,
 
     CONSTRAINT fk_order_status_history_status
         FOREIGN KEY (status_id)
