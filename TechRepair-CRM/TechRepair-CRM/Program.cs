@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Auth;
 using TechRepair_CRM.Data;
-using TechRepair_CRM.Services;
+using TechRepair_CRM.Services.Clients;
 using TechRepair_CRM.Services.Lookups;
 using TechRepair_CRM.Services.Orders;
+using TechRepair_CRM.Services.References;
+using TechRepair_CRM.Services.Reports;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,10 +48,18 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 
-builder.Services.AddScoped<ClientWorkflowService>();
 builder.Services.AddScoped<IOrderQueryService, OrderQueryService>();
 builder.Services.AddScoped<IOrderCommandService, OrderCommandService>();
+
 builder.Services.AddScoped<ILookupService, LookupService>();
+
+builder.Services.AddScoped<IClientQueryService, ClientQueryService>();
+builder.Services.AddScoped<IClientCommandService, ClientCommandService>();
+
+builder.Services.AddScoped<IReferenceQueryService, ReferenceQueryService>();
+builder.Services.AddScoped<IReferenceCommandService, ReferenceCommandService>();
+
+builder.Services.AddScoped<IReportQueryService, ReportQueryService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

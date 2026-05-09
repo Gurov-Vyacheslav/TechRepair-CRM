@@ -1,0 +1,50 @@
+﻿@page "{id:int}"
+@model TechRepair_CRM.Pages.Parts.EditModel
+
+@{
+    ViewData["Title"] = "Изменить деталь";
+}
+
+<h1>Изменить деталь</h1>
+
+<div class="form-page">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="form-field">
+            <label asp-for="Input.PartNumber" class="form-label"></label>
+            <input asp-for="Input.PartNumber" class="form-control" />
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.PartName" class="form-label"></label>
+            <input asp-for="Input.PartName" class="form-control" />
+            <span asp-validation-for="Input.PartName" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Manufacturer" class="form-label"></label>
+            <input asp-for="Input.Manufacturer" class="form-control" />
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.DefaultPrice" class="form-label"></label>
+            <input asp-for="Input.DefaultPrice" class="form-control form-control-sm" />
+        </div>
+
+        <div class="checkbox-field">
+            <input asp-for="Input.IsActive" />
+            <label asp-for="Input.IsActive"></label>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Description" class="form-label"></label>
+            <textarea asp-for="Input.Description" class="form-control"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a asp-page="/Parts/Index" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>

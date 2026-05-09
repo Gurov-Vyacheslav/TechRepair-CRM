@@ -8,8 +8,6 @@ namespace TechRepair_CRM.Services.Orders;
 
 public interface IOrderCommandService
 {
-    Task<int> CreateClientWithDeviceAsync(CreateClientWithDeviceRequest request);
-
     Task<int> CreateOrderAsync(CreateOrderRequest request);
 
     Task AddServiceToOrderAsync(int orderId, AddOrderServiceRequest request);

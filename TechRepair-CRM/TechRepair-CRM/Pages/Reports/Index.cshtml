@@ -1,0 +1,17 @@
+﻿@page
+@model TechRepair_CRM.Pages.Reports.IndexModel
+
+@{
+    ViewData["Title"] = "Отчёты";
+}
+
+<h1>Отчёты</h1>
+
+<div class="actions">
+    <a asp-page="/Reports/ActiveOrders" class="btn btn-primary">Активные заказы</a>
+    <a asp-page="/Reports/UnpaidOrders" class="btn btn-primary">Неоплаченные заказы</a>
+    <a asp-page="/Reports/TechnicianWorkload" class="btn btn-primary">Загрузка мастеров</a>
+    <a asp-page="/Reports/ServiceStatistics" class="btn btn-primary">Статистика услуг</a>
+    <a asp-page="/Reports/PartUsageStatistics" class="btn btn-primary">Статистика деталей</a>
+    <a asp-page="/Reports/RepairDuration" class="btn btn-primary">Длительность ремонта</a>
+</div>

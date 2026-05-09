@@ -2,19 +2,19 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using TechRepair_CRM.DTOs.Clients;
+using TechRepair_CRM.DTOs.Devices;
 using TechRepair_CRM.Services.Clients;
 using TechRepair_CRM.Services.Lookups;
 
 namespace TechRepair_CRM.Pages.Clients;
 
 [Authorize(Roles = "Admin,Manager")]
-public class CreateWithDeviceModel : PageModel
+public class AddDeviceModel : PageModel
 {
     private readonly ILookupService _lookupService;
     private readonly IClientCommandService _clientCommandService;
 
-    public CreateWithDeviceModel(
+    public AddDeviceModel(
         ILookupService lookupService,
         IClientCommandService clientCommandService)
     {
@@ -23,17 +23,22 @@ public class CreateWithDeviceModel : PageModel
     }
 
     [BindProperty]
-    public CreateClientWithDeviceRequest Input { get; set; } = new();
+    public AddDeviceRequest Input { get; set; } = new();
+
+    public int ClientId { get; private set; }
 
     public List<SelectListItem> DeviceTypes { get; private set; } = [];
 
-    public async Task OnGetAsync()
+    public async Task OnGetAsync(int clientId)
     {
+        ClientId = clientId;
         await LoadSelectListsAsync();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostAsync(int clientId)
     {
+        ClientId = clientId;
+
         if (!ModelState.IsValid)
         {
             await LoadSelectListsAsync();
@@ -42,7 +47,8 @@ public class CreateWithDeviceModel : PageModel
 
         try
         {
-            var deviceId = await _clientCommandService.CreateClientWithDeviceAsync(Input);
+            var deviceId = await _clientCommandService.AddDeviceToClientAsync(clientId, Input);
+
             return RedirectToPage("/Orders/Create", new { deviceId });
         }
         catch (Exception ex)

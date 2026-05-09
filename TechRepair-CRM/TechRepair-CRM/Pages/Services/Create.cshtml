@@ -1,0 +1,46 @@
+﻿@page
+@model TechRepair_CRM.Pages.Services.CreateModel
+
+@{
+    ViewData["Title"] = "Добавить услугу";
+}
+
+<h1>Добавить услугу</h1>
+
+<div class="form-page">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="form-field">
+            <label asp-for="Input.ServiceName" class="form-label"></label>
+            <input asp-for="Input.ServiceName" class="form-control" />
+            <span asp-validation-for="Input.ServiceName" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Description" class="form-label"></label>
+            <textarea asp-for="Input.Description" class="form-control"></textarea>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.BasePrice" class="form-label"></label>
+            <input asp-for="Input.BasePrice" class="form-control form-control-sm" />
+            <span asp-validation-for="Input.BasePrice" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.EstimatedDuration" class="form-label"></label>
+            <input asp-for="Input.EstimatedDuration" class="form-control form-control-sm" />
+        </div>
+
+        <div class="checkbox-field">
+            <input asp-for="Input.IsActive" />
+            <label asp-for="Input.IsActive"></label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a asp-page="/Services/Index" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>

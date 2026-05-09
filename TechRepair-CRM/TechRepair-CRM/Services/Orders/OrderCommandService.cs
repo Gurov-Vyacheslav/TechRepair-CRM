@@ -18,55 +18,11 @@ public class OrderCommandService : IOrderCommandService
         _db = db;
     }
 
-    public async Task<int> CreateClientWithDeviceAsync(CreateClientWithDeviceRequest request)
-    {
-        var deviceTypeExists = await _db.DeviceTypes
-            .AnyAsync(t => t.DeviceTypeId == request.DeviceTypeId);
-
-        if (!deviceTypeExists)
-            throw new InvalidOperationException("Указанный тип устройства не найден.");
-
-        var client = new Client
-        {
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            Phone = request.Phone,
-            Email = request.Email,
-            Address = request.Address,
-            RegistrationDate = DateTime.Now,
-            Notes = request.Notes
-        };
-
-        var device = new Device
-        {
-            Client = client,
-            DeviceTypeId = request.DeviceTypeId,
-            Brand = request.Brand,
-            Model = request.Model,
-            SerialNumber = request.SerialNumber,
-            EquipmentDescription = request.EquipmentDescription,
-            ExternalCondition = request.ExternalCondition,
-            Notes = request.Notes
-        };
-
-        _db.Clients.Add(client);
-        _db.Devices.Add(device);
-
-        await _db.SaveChangesAsync();
-
-        return device.DeviceId;
-    }
-
     public async Task<int> CreateOrderAsync(CreateOrderRequest request)
     {
-        var deviceExists = await _db.Devices
-            .AnyAsync(d => d.DeviceId == request.DeviceId);
+        await CheckDeviceExistsAsync(request.DeviceId);
 
-        if (!deviceExists)
-            throw new InvalidOperationException("Устройство не найдено.");
-
-        var createdStatus = await _db.OrderStatuses
-            .SingleAsync(s => s.StatusName == "Created");
+        var createdStatusId = await GetCreatedStatusIdAsync();
 
         var orderId = await GetNextOrderIdAsync();
 
@@ -75,7 +31,7 @@ public class OrderCommandService : IOrderCommandService
             OrderId = orderId,
             OrderNumber = $"RO-{DateTime.Today:yyyyMMdd}-{orderId:D6}",
             DeviceId = request.DeviceId,
-            StatusId = createdStatus.StatusId,
+            StatusId = createdStatusId,
             CreatedAt = DateTime.Now,
             ProblemDescription = request.ProblemDescription,
             DiagnosticResult = request.DiagnosticResult,
@@ -92,23 +48,32 @@ public class OrderCommandService : IOrderCommandService
         return order.OrderId;
     }
 
+    private async Task CheckDeviceExistsAsync(int deviceId)
+    {
+        var deviceExists = await _db.Devices
+            .AnyAsync(d => d.DeviceId == deviceId);
+
+        if (!deviceExists)
+            throw new InvalidOperationException("Устройство не найдено.");
+    }
+
+    private async Task<short> GetCreatedStatusIdAsync()
+    {
+        return await _db.OrderStatuses
+            .Where(os => os.StatusName == "Created")
+            .Select(os => os.StatusId)
+            .SingleAsync();
+    }
+
     public async Task AddServiceToOrderAsync(int orderId, AddOrderServiceRequest request)
     {
         await EnsureOrderCanBeModifiedAsync(orderId);
 
-        var service = await _db.Services
-            .FirstOrDefaultAsync(s => s.ServiceId == request.ServiceId && s.IsActive);
+        var service = await CheckActiveServiceExistsAsync(request.ServiceId);
 
-        if (service is null)
-            throw new InvalidOperationException("Активная услуга не найдена.");
-
-        if (request.TechnicianId is not null)
+        if (request.TechnicianId.HasValue)
         {
-            var technicianExists = await _db.Technicians
-                .AnyAsync(t => t.TechnicianId == request.TechnicianId && t.IsActive);
-
-            if (!technicianExists)
-                throw new InvalidOperationException("Активный мастер не найден.");
+            await CheckActiveTechnicianExistsAsync(request.TechnicianId.Value);
         }
 
         var price = service.BasePrice;
@@ -126,24 +91,32 @@ public class OrderCommandService : IOrderCommandService
         _db.OrderServices.Add(orderService);
         await _db.SaveChangesAsync();
     }
+
+    private async Task<Service> CheckActiveServiceExistsAsync(int serviceId)
+    {
+        var service = await _db.Services
+            .FirstOrDefaultAsync(s => s.ServiceId == serviceId && s.IsActive);
+
+        if (service is null)
+            throw new InvalidOperationException("Активная услуга не найдена.");
+
+        return service;
+    }
+
+    private async Task CheckActiveTechnicianExistsAsync(int technicianId)
+    {
+        var technicianExists = await _db.Technicians
+            .AnyAsync(t => t.TechnicianId == technicianId && t.IsActive);
+
+        if (!technicianExists)
+            throw new InvalidOperationException("Активный мастер не найден.");
+    }
     
     public async Task AddPartToOrderAsync(int orderId, AddOrderPartRequest request)
     {
         await EnsureOrderCanBeModifiedAsync(orderId);
 
-        var part = await _db.Parts
-            .FirstOrDefaultAsync(p => p.PartId == request.PartId && p.IsActive);
-
-        if (part is null)
-            throw new InvalidOperationException("Активная деталь не найдена.");
-
-        if (part.DefaultPrice is null)
-            throw new InvalidOperationException("У детали не указана текущая цена.");
-
-        var existingOrderPart = await _db.OrderParts
-            .FirstOrDefaultAsync(op =>
-                op.OrderId == orderId &&
-                op.PartId == request.PartId);
+        var existingOrderPart = await GetOrderPartAsync(orderId, request.PartId);
 
         if (existingOrderPart is not null)
         {
@@ -151,6 +124,8 @@ public class OrderCommandService : IOrderCommandService
         }
         else
         {
+            var part = await CheckActivePartExistsAsync(request.PartId);
+            
             var orderPart = new OrderPart
             {
                 OrderId = orderId,
@@ -165,16 +140,31 @@ public class OrderCommandService : IOrderCommandService
         await _db.SaveChangesAsync();
     }
 
+    private async Task<Part> CheckActivePartExistsAsync(int partId)
+    {
+        var part = await _db.Parts
+            .FirstOrDefaultAsync(p => p.PartId == partId && p.IsActive);
+
+        if (part is null)
+            throw new InvalidOperationException("Активная деталь не найдена.");
+
+        if (part.DefaultPrice is null)
+            throw new InvalidOperationException("У детали не указана текущая цена.");
+
+        return part;
+    }
+
+    private async Task<OrderPart?> GetOrderPartAsync(int orderId, int partId)
+    {
+        return await _db.OrderParts
+            .FirstOrDefaultAsync(op =>
+                op.OrderId == orderId &&
+                op.PartId == partId);
+    }
+
     public async Task CompleteServiceAsync(int orderId, int serviceId)
     {
-        var status = await _db.RepairOrders
-            .Where(o => o.OrderId == orderId)
-            .Join(
-                _db.OrderStatuses,
-                order => order.StatusId,
-                status => status.StatusId,
-                (order, status) => status.StatusName)
-            .SingleOrDefaultAsync();
+        var status = await GetOrderStatusAsync(orderId);
 
         if (status is null)
             throw new InvalidOperationException("Заказ не найден.");
@@ -182,8 +172,7 @@ public class OrderCommandService : IOrderCommandService
         if (status != "InRepair")
             throw new InvalidOperationException("Услугу можно завершить только когда заказ находится в статусе InRepair.");
 
-        var orderService = await _db.OrderServices
-            .FirstOrDefaultAsync(os => os.OrderId == orderId && os.ServiceId == serviceId);
+        var orderService = await GetOrderServiceAsync(orderId, serviceId);
 
         if (orderService is null)
             throw new InvalidOperationException("Услуга в заказе не найдена.");
@@ -196,13 +185,23 @@ public class OrderCommandService : IOrderCommandService
         await _db.SaveChangesAsync();
     }
 
+    private async Task<string?> GetOrderStatusAsync(int orderId)
+    {
+        return await _db.RepairOrders
+            .Where(o => o.OrderId == orderId)
+            .Select(o => o.Status.StatusName)
+            .SingleOrDefaultAsync();
+    }
+
+    private async Task<OrderService?> GetOrderServiceAsync(int orderId, int serviceId)
+    {
+        return await _db.OrderServices
+            .FirstOrDefaultAsync(os => os.OrderId == orderId && os.ServiceId == serviceId);
+    }
+
     public async Task AddPaymentAsync(int orderId, AddPaymentRequest request)
     {
-        var orderExists = await _db.RepairOrders
-            .AnyAsync(o => o.OrderId == orderId);
-
-        if (!orderExists)
-            throw new InvalidOperationException("Заказ не найден.");
+        await CheckOrderExistsAsync(orderId);
 
         var payment = new Payment
         {
@@ -220,20 +219,23 @@ public class OrderCommandService : IOrderCommandService
         await _db.SaveChangesAsync();
     }
 
+    private async Task<RepairOrder> CheckOrderExistsAsync(int orderId)
+    {
+        var order = await _db.RepairOrders
+            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+        return order ?? throw new InvalidOperationException("Заказ не найден.");
+    }
+
     public async Task ChangeStatusAsync(int orderId, string newStatus, string? comment)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var order = await _db.RepairOrders
-            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+        var order = await CheckOrderExistsAsync(orderId);
 
-        if (order is null)
-            throw new InvalidOperationException("Заказ не найден.");
-
-        var currentStatus = await _db.OrderStatuses
-            .Where(s => s.StatusId == order.StatusId)
-            .Select(s => s.StatusName)
-            .SingleAsync();
+        var currentStatus = await GetOrderStatusAsync(orderId);
+        if (currentStatus is null)
+            throw new InvalidOperationException("Статус заказа не найден");
 
         if (currentStatus == newStatus)
             return;
@@ -246,25 +248,12 @@ public class OrderCommandService : IOrderCommandService
 
         await ValidateStatusTransitionAsync(orderId, newStatus);
 
-        var newStatusEntity = await _db.OrderStatuses
-            .SingleOrDefaultAsync(s => s.StatusName == newStatus);
-
-        if (newStatusEntity is null)
-            throw new InvalidOperationException("Новый статус не найден.");
-
-        var now = DateTime.Now;
+        var newStatusEntity = await CheckStatusExistsAsync(newStatus);
 
         order.StatusId = newStatusEntity.StatusId;
-
-        if (newStatus == "Accepted" && order.AcceptedAt is null)
-            order.AcceptedAt = now;
-
-        if (newStatus == "Ready" && order.CompletedAt is null)
-            order.CompletedAt = now;
-
-        if (newStatus == "Closed" && order.IssuedAt is null)
-            order.IssuedAt = now;
-
+        
+        var now = DateTime.Now;
+        UpdateTimestamps(order, newStatus, now);
         _db.OrderStatusHistories.Add(new OrderStatusHistory
         {
             OrderId = orderId,
@@ -281,6 +270,30 @@ public class OrderCommandService : IOrderCommandService
 
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
+    }
+
+    private async Task<OrderStatus> CheckStatusExistsAsync(string status)
+    {
+        var newStatusEntity = await _db.OrderStatuses
+            .SingleOrDefaultAsync(s => s.StatusName == status);
+
+        return newStatusEntity ?? throw new InvalidOperationException("Новый статус не найден.");
+    }
+
+    private static void UpdateTimestamps(RepairOrder order, string newStatus, DateTime now)
+    {
+        switch (newStatus)
+        {
+            case "Accepted" when order.AcceptedAt is null:
+                order.AcceptedAt = now;
+                break;
+            case "Ready" when order.CompletedAt is null:
+                order.CompletedAt = now;
+                break;
+            case "Closed" when order.IssuedAt is null:
+                order.IssuedAt = now;
+                break;
+        }
     }
 
     private async Task EnsureOrderCanBeModifiedAsync(int orderId)

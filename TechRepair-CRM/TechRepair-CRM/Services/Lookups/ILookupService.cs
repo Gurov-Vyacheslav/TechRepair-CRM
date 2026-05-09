@@ -13,4 +13,6 @@ public interface ILookupService
     Task<List<SelectListItem>> GetActivePartsAsync();
 
     Task<List<SelectListItem>> GetActiveTechniciansAsync();
+    
+    Task<List<SelectListItem>> GetClientsAsync();
 }

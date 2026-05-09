@@ -1,0 +1,53 @@
+﻿@page
+@model TechRepair_CRM.Pages.Reports.RepairDurationModel
+
+@{
+    ViewData["Title"] = "Длительность ремонта";
+}
+
+<h1>Длительность ремонта</h1>
+
+<p>
+    <a asp-page="/Reports/Index" class="btn btn-secondary">Назад к отчётам</a>
+</p>
+
+@if (Model.Items.Count == 0)
+{
+    <p>Данных пока нет.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Заказ</th>
+            <th>Дата создания</th>
+            <th>Дата готовности</th>
+            <th>Статус</th>
+            <th>Часов</th>
+            <th>Дней</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.OrderNumber</td>
+                <td>@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>@(item.CompletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                <td>@item.OrderStatus</td>
+                <td>@item.RepairDurationHours</td>
+                <td>@item.RepairDurationDays</td>
+                <td>
+                    <a asp-page="/Orders/Details"
+                       asp-route-id="@item.OrderId"
+                       class="btn btn-small">
+                        Открыть
+                    </a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

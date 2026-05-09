@@ -1,0 +1,47 @@
+﻿@page
+@model TechRepair_CRM.Pages.Reports.PartUsageStatisticsModel
+
+@{
+    ViewData["Title"] = "Статистика деталей";
+}
+
+<h1>Статистика деталей</h1>
+
+<p>
+    <a asp-page="/Reports/Index" class="btn btn-secondary">Назад к отчётам</a>
+</p>
+
+@if (Model.Items.Count == 0)
+{
+    <p>Данных пока нет.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Артикул</th>
+            <th>Деталь</th>
+            <th>Производитель</th>
+            <th>Активна</th>
+            <th>Использований</th>
+            <th>Количество</th>
+            <th>Сумма</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.PartNumber</td>
+                <td>@item.PartName</td>
+                <td>@item.Manufacturer</td>
+                <td>@(item.IsActive ? "Да" : "Нет")</td>
+                <td>@item.UsageCount</td>
+                <td>@item.TotalQuantity</td>
+                <td>@item.TotalAmount</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

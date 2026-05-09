@@ -1,0 +1,57 @@
+﻿@page
+@model TechRepair_CRM.Pages.Clients.IndexModel
+
+@{
+    ViewData["Title"] = "Клиенты";
+}
+
+<h1>Клиенты</h1>
+
+<div class="actions">
+    <a asp-page="/Clients/CreateWithDevice" class="btn btn-primary">
+        Создать клиента с устройством
+    </a>
+</div>
+
+@if (Model.Clients.Count == 0)
+{
+    <p>Клиентов пока нет.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>ФИО</th>
+            <th>Телефон</th>
+            <th>Email</th>
+            <th>Дата регистрации</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var client in Model.Clients)
+        {
+            <tr>
+                <td>@client.LastName @client.FirstName</td>
+                <td>@client.Phone</td>
+                <td>@client.Email</td>
+                <td>@client.RegistrationDate.ToString("dd.MM.yyyy")</td>
+                <td>
+                    <a asp-page="/Clients/Details"
+                       asp-route-id="@client.ClientId"
+                       class="btn btn-small">
+                        Открыть
+                    </a>
+
+                    <a asp-page="/Clients/AddDevice"
+                       asp-route-clientId="@client.ClientId"
+                       class="btn btn-small btn-primary">
+                        Добавить устройство
+                    </a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

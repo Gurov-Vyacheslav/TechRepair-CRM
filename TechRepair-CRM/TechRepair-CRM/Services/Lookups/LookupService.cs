@@ -84,4 +84,17 @@ public class LookupService : ILookupService
             })
             .ToListAsync();
     }
+    
+    public async Task<List<SelectListItem>> GetClientsAsync()
+    {
+        return await _db.Clients
+            .OrderBy(c => c.LastName)
+            .ThenBy(c => c.FirstName)
+            .Select(c => new SelectListItem
+            {
+                Value = c.ClientId.ToString(),
+                Text = c.LastName + " " + c.FirstName + " — " + c.Phone
+            })
+            .ToListAsync();
+    }
 }

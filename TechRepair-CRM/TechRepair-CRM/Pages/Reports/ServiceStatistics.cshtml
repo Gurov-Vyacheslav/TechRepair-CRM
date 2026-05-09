@@ -1,0 +1,45 @@
+﻿@page
+@model TechRepair_CRM.Pages.Reports.ServiceStatisticsModel
+
+@{
+    ViewData["Title"] = "Статистика услуг";
+}
+
+<h1>Статистика услуг</h1>
+
+<p>
+    <a asp-page="/Reports/Index" class="btn btn-secondary">Назад к отчётам</a>
+</p>
+
+@if (Model.Items.Count == 0)
+{
+    <p>Данных пока нет.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Услуга</th>
+            <th>Активна</th>
+            <th>Количество использований</th>
+            <th>Общее количество</th>
+            <th>Выручка</th>
+            <th>Средняя цена</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.ServiceName</td>
+                <td>@(item.IsActive ? "Да" : "Нет")</td>
+                <td>@item.UsageCount</td>
+                <td>@item.TotalQuantity</td>
+                <td>@item.TotalRevenue</td>
+                <td>@item.AvgPriceAtMoment</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

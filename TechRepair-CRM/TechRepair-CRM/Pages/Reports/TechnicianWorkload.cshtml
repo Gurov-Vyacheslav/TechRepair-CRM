@@ -1,0 +1,47 @@
+﻿@page
+@model TechRepair_CRM.Pages.Reports.TechnicianWorkloadModel
+
+@{
+    ViewData["Title"] = "Загрузка мастеров";
+}
+
+<h1>Загрузка мастеров</h1>
+
+<p>
+    <a asp-page="/Reports/Index" class="btn btn-secondary">Назад к отчётам</a>
+</p>
+
+@if (Model.Items.Count == 0)
+{
+    <p>Данных пока нет.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Мастер</th>
+            <th>Специализация</th>
+            <th>Активен</th>
+            <th>Назначено услуг</th>
+            <th>Завершено услуг</th>
+            <th>Количество услуг</th>
+            <th>Сумма работ</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in Model.Items)
+        {
+            <tr>
+                <td>@item.LastName @item.FirstName</td>
+                <td>@item.Specialization</td>
+                <td>@(item.IsActive ? "Да" : "Нет")</td>
+                <td>@item.AssignedServicesCount</td>
+                <td>@item.CompletedServicesCount</td>
+                <td>@item.TotalServiceQuantity</td>
+                <td>@item.TotalServiceAmount</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

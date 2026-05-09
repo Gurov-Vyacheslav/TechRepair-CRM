@@ -1,0 +1,123 @@
+﻿@page "{id:int}"
+@model TechRepair_CRM.Pages.Clients.DetailsModel
+
+@{
+    ViewData["Title"] = "Карточка клиента";
+}
+
+<h1>@Model.Client.LastName @Model.Client.FirstName</h1>
+
+<div class="actions">
+    <a asp-page="/Clients/Index" class="btn btn-secondary">Назад</a>
+
+    <a asp-page="/Clients/AddDevice"
+       asp-route-clientId="@Model.Client.ClientId"
+       class="btn btn-primary">
+        Добавить устройство
+    </a>
+</div>
+
+<h2>Данные клиента</h2>
+
+<table>
+    <tr>
+        <th>Телефон</th>
+        <td>@Model.Client.Phone</td>
+    </tr>
+    <tr>
+        <th>Email</th>
+        <td>@Model.Client.Email</td>
+    </tr>
+    <tr>
+        <th>Адрес</th>
+        <td>@Model.Client.Address</td>
+    </tr>
+    <tr>
+        <th>Дата регистрации</th>
+        <td>@Model.Client.RegistrationDate.ToString("dd.MM.yyyy")</td>
+    </tr>
+    <tr>
+        <th>Заметки</th>
+        <td>@Model.Client.Notes</td>
+    </tr>
+</table>
+
+<h2>Устройства</h2>
+
+@if (Model.Client.Devices.Count == 0)
+{
+    <p>У клиента пока нет устройств.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Тип</th>
+            <th>Бренд</th>
+            <th>Модель</th>
+            <th>Серийный номер</th>
+            <th>Комплектация</th>
+            <th>Состояние</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var device in Model.Client.Devices)
+        {
+            <tr>
+                <td>@device.DeviceType</td>
+                <td>@device.Brand</td>
+                <td>@device.Model</td>
+                <td>@device.SerialNumber</td>
+                <td>@device.EquipmentDescription</td>
+                <td>@device.ExternalCondition</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<h2>Заказы клиента</h2>
+
+@if (Model.Client.Orders.Count == 0)
+{
+    <p>У клиента пока нет заказов.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Номер</th>
+            <th>Дата</th>
+            <th>Статус</th>
+            <th>Устройство</th>
+            <th>Стоимость</th>
+            <th>Оплачено</th>
+            <th>Остаток</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var order in Model.Client.Orders)
+        {
+            <tr>
+                <td>@order.OrderNumber</td>
+                <td>@order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>@order.OrderStatus</td>
+                <td>@order.DeviceType @order.Brand @order.Model</td>
+                <td>@order.TotalCost</td>
+                <td>@order.PaidAmount</td>
+                <td>@order.RemainingAmount</td>
+                <td>
+                    <a asp-page="/Orders/Details"
+                       asp-route-id="@order.OrderId"
+                       class="btn btn-small">
+                        Открыть
+                    </a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

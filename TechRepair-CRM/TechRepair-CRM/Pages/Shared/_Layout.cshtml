@@ -15,16 +15,12 @@
 
     <nav class="topbar__nav">
         <a asp-page="/Orders/Index">Заказы</a>
-        <a asp-page="/Orders/Create">Создать заказ</a>
-        <a asp-page="/Clients/CreateWithDevice">Новый клиент</a>
-
-        <span class="nav-separator"></span>
-
-        <a href="#">Услуги</a>
-        <a href="#">Детали</a>
-        <a href="#">Мастера</a>
-        <a href="#">Отчёты</a>
-    </nav>
+        <a asp-page="/Clients/Index">Клиенты</a>
+        <a asp-page="/Services/Index">Услуги</a>
+        <a asp-page="/Parts/Index">Детали</a>
+        <a asp-page="/Technicians/Index">Мастера</a>
+        <a asp-page="/Reports/Index">Отчёты</a>
+    </nav> 
 
     <div class="topbar__user">
         @if (User.Identity?.IsAuthenticated == true)
