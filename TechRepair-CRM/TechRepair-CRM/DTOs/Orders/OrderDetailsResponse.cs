@@ -1,4 +1,9 @@
-﻿namespace TechRepair_CRM.DTOs.Orders;
+﻿using TechRepair_CRM.DTOs.Orders.Parts;
+using TechRepair_CRM.DTOs.Orders.Payments;
+using TechRepair_CRM.DTOs.Orders.Services;
+using TechRepair_CRM.DTOs.Orders.StatusHistory;
+
+namespace TechRepair_CRM.DTOs.Orders;
 
 public record OrderDetailsResponse(
     int OrderId,
@@ -35,5 +40,10 @@ public record OrderDetailsResponse(
     decimal ServiceSum,
     decimal PartSum,
     decimal PaidAmount,
-    decimal RemainingAmount
+    decimal RemainingAmount,
+
+    List<OrderServiceResponse> Services,
+    List<OrderPartResponse> Parts,
+    List<PaymentResponse> Payments,
+    List<OrderStatusHistoryResponse> StatusHistory
 );

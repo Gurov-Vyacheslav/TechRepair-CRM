@@ -1,0 +1,97 @@
+﻿@page
+@model TechRepair_CRM.Pages.Clients.CreateWithDeviceModel
+
+@{
+    ViewData["Title"] = "Создать клиента и устройство";
+}
+
+<h1>Создать клиента и устройство</h1>
+
+<div class="form-page">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <h2>Клиент</h2>
+
+        <div class="form-field">
+            <label asp-for="Input.FirstName" class="form-label"></label>
+            <input asp-for="Input.FirstName" class="form-control" />
+            <span asp-validation-for="Input.FirstName" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.LastName" class="form-label"></label>
+            <input asp-for="Input.LastName" class="form-control" />
+            <span asp-validation-for="Input.LastName" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Phone" class="form-label"></label>
+            <input asp-for="Input.Phone" class="form-control" />
+            <span asp-validation-for="Input.Phone" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Email" class="form-label"></label>
+            <input asp-for="Input.Email" class="form-control" />
+            <span asp-validation-for="Input.Email" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Address" class="form-label"></label>
+            <input asp-for="Input.Address" class="form-control" />
+            <span asp-validation-for="Input.Address" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Notes" class="form-label"></label>
+            <textarea asp-for="Input.Notes" class="form-control"></textarea>
+            <span asp-validation-for="Input.Notes" class="validation-message"></span>
+        </div>
+
+        <h2>Устройство</h2>
+
+        <div class="form-field">
+            <label asp-for="Input.DeviceTypeId" class="form-label"></label>
+            <select asp-for="Input.DeviceTypeId" asp-items="Model.DeviceTypes" class="form-control">
+                <option value="">Выберите тип устройства</option>
+            </select>
+            <span asp-validation-for="Input.DeviceTypeId" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Brand" class="form-label"></label>
+            <input asp-for="Input.Brand" class="form-control" />
+            <span asp-validation-for="Input.Brand" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Model" class="form-label"></label>
+            <input asp-for="Input.Model" class="form-control" />
+            <span asp-validation-for="Input.Model" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.SerialNumber" class="form-label"></label>
+            <input asp-for="Input.SerialNumber" class="form-control" />
+            <span asp-validation-for="Input.SerialNumber" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.EquipmentDescription" class="form-label"></label>
+            <textarea asp-for="Input.EquipmentDescription" class="form-control"></textarea>
+            <span asp-validation-for="Input.EquipmentDescription" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.ExternalCondition" class="form-label"></label>
+            <textarea asp-for="Input.ExternalCondition" class="form-control"></textarea>
+            <span asp-validation-for="Input.ExternalCondition" class="validation-message"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Создать</button>
+            <a asp-page="/Orders/Index" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>

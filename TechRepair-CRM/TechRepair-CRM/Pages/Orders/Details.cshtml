@@ -1,0 +1,321 @@
+﻿@page "{id:int}"
+@model TechRepair_CRM.Pages.Orders.DetailsModel
+
+@{
+    ViewData["Title"] = $"Заказ {Model.Order.OrderNumber}";
+}
+
+<h1>Заказ @Model.Order.OrderNumber</h1>
+
+@if (TempData["Success"] is not null)
+{
+    <p class="message-success">@TempData["Success"]</p>
+}
+
+@if (TempData["Error"] is not null)
+{
+    <p class="message-error">@TempData["Error"]</p>
+}
+
+<p>
+    <a asp-page="/Orders/Index">← Назад к заказам</a>
+</p>
+
+<h2>Основная информация</h2>
+
+<table>
+    <tr>
+        <th>Статус</th>
+        <td>@Model.Order.OrderStatus</td>
+    </tr>
+    <tr>
+        <th>Дата создания</th>
+        <td>@Model.Order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+    </tr>
+    <tr>
+        <th>Проблема</th>
+        <td>@Model.Order.ProblemDescription</td>
+    </tr>
+    <tr>
+        <th>Результат диагностики</th>
+        <td>@Model.Order.DiagnosticResult</td>
+    </tr>
+    <tr>
+        <th>Итоговая стоимость</th>
+        <td>@Model.Order.TotalCost</td>
+    </tr>
+    <tr>
+        <th>Оплачено</th>
+        <td>@Model.Order.PaidAmount</td>
+    </tr>
+    <tr>
+        <th>Остаток</th>
+        <td>@Model.Order.RemainingAmount</td>
+    </tr>
+</table>
+
+@if (Model.Order.OrderStatus is not "Closed" and not "Canceled")
+{
+    <h2>Действия</h2>
+
+    <div class="actions">
+        <a asp-page="/Orders/AddService"
+           asp-route-orderId="@Model.Order.OrderId"
+           class="btn btn-primary">
+            Добавить услугу
+        </a>
+
+        <a asp-page="/Orders/AddPart"
+           asp-route-orderId="@Model.Order.OrderId"
+           class="btn btn-primary">
+            Добавить деталь
+        </a>
+
+        <a asp-page="/Orders/AddPayment"
+           asp-route-orderId="@Model.Order.OrderId"
+           class="btn btn-primary">
+            Добавить оплату
+        </a>
+    </div>
+}
+
+@if (Model.Order.OrderStatus is not "Closed" and not "Canceled")
+{
+    <h2>Смена статуса</h2>
+
+    <form method="post"
+          asp-page-handler="ChangeStatus"
+          asp-route-id="@Model.Order.OrderId"
+          class="status-form">
+
+        <div class="form-field">
+            <label for="comment" class="form-label">Комментарий к смене статуса</label>
+            <textarea name="comment" id="comment" class="form-control"></textarea>
+        </div>
+
+        <div class="status-buttons">
+            @if (Model.Order.OrderStatus == "Created")
+            {
+                <button type="submit" name="newStatus" value="Accepted" class="btn btn-primary">
+                    Принять
+                </button>
+
+                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">
+                    Отменить
+                </button>
+            }
+            else if (Model.Order.OrderStatus == "Accepted")
+            {
+                <button type="submit" name="newStatus" value="InRepair" class="btn btn-primary">
+                    Начать ремонт
+                </button>
+
+                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">
+                    Отменить
+                </button>
+            }
+            else if (Model.Order.OrderStatus == "InRepair")
+            {
+                <button type="submit" name="newStatus" value="Ready" class="btn btn-primary">
+                    Готов
+                </button>
+
+                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">
+                    Отменить
+                </button>
+            }
+            else if (Model.Order.OrderStatus == "Ready")
+            {
+                <button type="submit" name="newStatus" value="Closed" class="btn btn-primary">
+                    Закрыть
+                </button>
+            }
+        </div>
+    </form>
+}
+
+
+<h2>Клиент</h2>
+
+<table>
+    <tr>
+        <th>ФИО</th>
+        <td>@Model.Order.ClientFirstName @Model.Order.ClientLastName</td>
+    </tr>
+    <tr>
+        <th>Телефон</th>
+        <td>@Model.Order.ClientPhone</td>
+    </tr>
+    <tr>
+        <th>Email</th>
+        <td>@Model.Order.ClientEmail</td>
+    </tr>
+</table>
+
+<h2>Устройство</h2>
+
+<table>
+    <tr>
+        <th>Тип</th>
+        <td>@Model.Order.DeviceType</td>
+    </tr>
+    <tr>
+        <th>Бренд</th>
+        <td>@Model.Order.Brand</td>
+    </tr>
+    <tr>
+        <th>Модель</th>
+        <td>@Model.Order.Model</td>
+    </tr>
+    <tr>
+        <th>Серийный номер</th>
+        <td>@Model.Order.SerialNumber</td>
+    </tr>
+    <tr>
+        <th>Комплектация</th>
+        <td>@Model.Order.EquipmentDescription</td>
+    </tr>
+    <tr>
+        <th>Внешнее состояние</th>
+        <td>@Model.Order.ExternalCondition</td>
+    </tr>
+</table>
+
+<h2>Услуги</h2>
+
+@if (Model.Order.Services.Count == 0)
+{
+    <p>Услуги не добавлены.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Услуга</th>
+            <th>Мастер</th>
+            <th>Количество</th>
+            <th>Цена</th>
+            <th>Сумма</th>
+            <th>Дата завершения</th>
+            <th>Действие</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var service in Model.Order.Services)
+        {
+            <tr>
+                <td>@service.ServiceName</td>
+                <td>@service.TechnicianFullName</td>
+                <td>@service.Quantity</td>
+                <td>@service.PriceAtMoment</td>
+                <td>@service.TotalPrice</td>
+                <td>@(service.CompletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                <td>
+                    @if (service.CompletedAt is null && Model.Order.OrderStatus == "InRepair")
+                    {
+                        <form method="post"
+                              asp-page-handler="CompleteService"
+                              asp-route-id="@Model.Order.OrderId"
+                              asp-route-serviceId="@service.ServiceId">
+                            <button type="submit" class="btn btn-small btn-primary">
+                                Завершить
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span>—</span>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<h2>Запчасти</h2>
+
+@if (Model.Order.Parts.Count == 0)
+{
+    <p>Запчасти не добавлены.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Запчасть</th>
+            <th>Артикул</th>
+            <th>Количество</th>
+            <th>Цена</th>
+            <th>Сумма</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var part in Model.Order.Parts)
+        {
+            <tr>
+                <td>@part.PartName</td>
+                <td>@part.PartNumber</td>
+                <td>@part.Quantity</td>
+                <td>@part.PriceAtMoment</td>
+                <td>@part.TotalPrice</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<h2>Оплаты</h2>
+
+@if (Model.Order.Payments.Count == 0)
+{
+    <p>Оплат пока нет.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Сумма</th>
+            <th>Способ</th>
+            <th>Транзакция</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var payment in Model.Order.Payments)
+        {
+            <tr>
+                <td>@payment.PaymentDate.ToString("dd.MM.yyyy HH:mm")</td>
+                <td>@payment.Amount</td>
+                <td>@payment.PaymentMethod</td>
+                <td>@payment.TransactionNumber</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+<h2>История статусов</h2>
+
+<table>
+    <thead>
+    <tr>
+        <th>Дата</th>
+        <th>Статус</th>
+        <th>Комментарий</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.Order.StatusHistory)
+    {
+        <tr>
+            <td>@item.ChangedAt.ToString("dd.MM.yyyy HH:mm")</td>
+            <td>@item.StatusName</td>
+            <td>@item.Comment</td>
+        </tr>
+    }
+    </tbody>
+</table>

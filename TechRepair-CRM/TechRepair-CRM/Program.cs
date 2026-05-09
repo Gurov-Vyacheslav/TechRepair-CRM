@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Auth;
 using TechRepair_CRM.Data;
 using TechRepair_CRM.Services;
+using TechRepair_CRM.Services.Lookups;
+using TechRepair_CRM.Services.Orders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,13 +34,22 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AuthorizeFolder("/Orders");
+    options.Conventions.AllowAnonymousToPage("/Account/Login");
+    options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
+});
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
-builder.Services.AddRazorPages();
 
-builder.Services.AddScoped<OrderWorkflowService>();
+
 builder.Services.AddScoped<ClientWorkflowService>();
+builder.Services.AddScoped<IOrderQueryService, OrderQueryService>();
+builder.Services.AddScoped<IOrderCommandService, OrderCommandService>();
+builder.Services.AddScoped<ILookupService, LookupService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

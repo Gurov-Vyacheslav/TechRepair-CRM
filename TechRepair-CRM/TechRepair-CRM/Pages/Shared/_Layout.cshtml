@@ -1,0 +1,47 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"] - TechRepair CRM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+<header class="topbar">
+    <div class="topbar__brand">
+        <a asp-page="/Orders/Index">TechRepair CRM</a>
+    </div>
+
+    <nav class="topbar__nav">
+        <a asp-page="/Orders/Index">Заказы</a>
+        <a asp-page="/Orders/Create">Создать заказ</a>
+        <a asp-page="/Clients/CreateWithDevice">Новый клиент</a>
+
+        <span class="nav-separator"></span>
+
+        <a href="#">Услуги</a>
+        <a href="#">Детали</a>
+        <a href="#">Мастера</a>
+        <a href="#">Отчёты</a>
+    </nav>
+
+    <div class="topbar__user">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <span>@User.Identity.Name</span>
+
+            <form method="post" asp-page="/Account/Logout" class="logout-form">
+                <button type="submit">Выйти</button>
+            </form>
+        }
+    </div>
+</header>
+
+<main class="page">
+    @RenderBody()
+</main>
+
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

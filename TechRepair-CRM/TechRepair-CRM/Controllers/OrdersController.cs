@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TechRepair_CRM.Data;
-using TechRepair_CRM.DTOs;
 using TechRepair_CRM.DTOs.Orders;
-using TechRepair_CRM.Services;
+using TechRepair_CRM.Services.Orders;
+
 
 namespace TechRepair_CRM.Controllers;
 
@@ -13,33 +11,35 @@ namespace TechRepair_CRM.Controllers;
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
 {
-    private readonly OrderWorkflowService _orderService;
+    private readonly IOrderCommandService _orderCommandService;
+    private readonly IOrderQueryService  _orderQueryService;
 
-    public OrdersController(OrderWorkflowService orderService)
+    public OrdersController(IOrderCommandService orderCommandService,  IOrderQueryService orderQueryService)
     {
-        _orderService = orderService;
+        _orderCommandService = orderCommandService;
+        _orderQueryService = orderQueryService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<ListResponse<OrderListItemResponse>>> GetAll()
+    public async Task<ActionResult<List<OrderListItemResponse>>> GetAll()
     {
-        var response = await _orderService.GetAllAsync();
+        var response = await _orderQueryService.GetOrdersAsync();
         return Ok(response);
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OrderDetailsResponse>> GetById(int id)
     {
-        var order = await _orderService.GetByIdAsync(id);
+        var order = await _orderQueryService.GetOrderDetailsAsync(id);
 
         return order is null ? NotFound() : Ok(order);
     }
     
     [Authorize(Roles = "Admin,Manager")]
     [HttpPost]
-    public async Task<ActionResult<CreateOrderResponse>> CreateOrder(CreateOrderRequest request)
+    public async Task<ActionResult> CreateOrder(CreateOrderRequest request)
     {
-        var response = await _orderService.CreateOrderAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = response.OrderId }, response);
+        var orderId = await _orderCommandService.CreateOrderAsync(request);
+        return CreatedAtAction(nameof(GetById), new { id = orderId }, orderId);
     }
 }

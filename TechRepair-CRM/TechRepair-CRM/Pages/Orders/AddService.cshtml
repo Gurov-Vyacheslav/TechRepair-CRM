@@ -1,0 +1,47 @@
+﻿@page "{orderId:int}"
+@model TechRepair_CRM.Pages.Orders.AddServiceModel
+
+@{
+    ViewData["Title"] = "Добавить услугу";
+}
+
+<h1>Добавить услугу</h1>
+
+<div class="form-page">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="form-field">
+            <label asp-for="Input.ServiceId" class="form-label"></label>
+            <select asp-for="Input.ServiceId" asp-items="Model.Services" class="form-control">
+                <option value="">Выберите услугу</option>
+            </select>
+            <span asp-validation-for="Input.ServiceId" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.TechnicianId" class="form-label"></label>
+            <select asp-for="Input.TechnicianId" asp-items="Model.Technicians" class="form-control">
+                <option value="">Мастер не назначен</option>
+            </select>
+            <span asp-validation-for="Input.TechnicianId" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Quantity" class="form-label"></label>
+            <input asp-for="Input.Quantity" class="form-control form-control-sm" />
+            <span asp-validation-for="Input.Quantity" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Notes" class="form-label"></label>
+            <textarea asp-for="Input.Notes" class="form-control"></textarea>
+            <span asp-validation-for="Input.Notes" class="validation-message"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Добавить услугу</button>
+            <a asp-page="/Orders/Details" asp-route-id="@Model.OrderId" class="btn btn-secondary">Назад</a>
+        </div>
+    </form>
+</div>

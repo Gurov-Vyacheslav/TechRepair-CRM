@@ -1,0 +1,47 @@
+﻿@page "{orderId:int}"
+@model TechRepair_CRM.Pages.Orders.AddPaymentModel
+
+@{
+    ViewData["Title"] = "Добавить оплату";
+}
+
+<h1>Добавить оплату</h1>
+
+<div class="form-page">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="form-field">
+            <label asp-for="Input.Amount" class="form-label"></label>
+            <input asp-for="Input.Amount" class="form-control form-control-sm" />
+            <span asp-validation-for="Input.Amount" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.PaymentMethod" class="form-label"></label>
+            <select asp-for="Input.PaymentMethod" class="form-control">
+                <option value="Cash">Наличные</option>
+                <option value="Card">Карта</option>
+                <option value="Transfer">Перевод</option>
+            </select>
+            <span asp-validation-for="Input.PaymentMethod" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.TransactionNumber" class="form-label"></label>
+            <input asp-for="Input.TransactionNumber" class="form-control" />
+            <span asp-validation-for="Input.TransactionNumber" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Notes" class="form-label"></label>
+            <textarea asp-for="Input.Notes" class="form-control"></textarea>
+            <span asp-validation-for="Input.Notes" class="validation-message"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Добавить оплату</button>
+            <a asp-page="/Orders/Details" asp-route-id="@Model.OrderId" class="btn btn-secondary">Назад</a>
+        </div>
+    </form>
+</div>
