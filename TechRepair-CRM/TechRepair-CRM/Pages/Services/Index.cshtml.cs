@@ -1,41 +1,29 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
-using TechRepair_CRM.Data;
+using TechRepair_CRM.DTOs.References;
+using TechRepair_CRM.DTOs.References.Services;
+using TechRepair_CRM.Services.References;
 
 namespace TechRepair_CRM.Pages.Services;
 
 [Authorize(Roles = "Admin,Manager")]
 public class IndexModel : PageModel
 {
-    private readonly RepairServiceDbContext _db;
+    private readonly IReferenceQueryService _referenceQueryService;
 
-    public IndexModel(RepairServiceDbContext db)
+    public IndexModel(IReferenceQueryService referenceQueryService)
     {
-        _db = db;
+        _referenceQueryService = referenceQueryService;
     }
 
-    public List<ServiceItem> Services { get; private set; } = [];
+    [BindProperty(SupportsGet = true)]
+    public ReferenceFilterRequest Filter { get; set; } = new();
+
+    public IReadOnlyList<ServiceItemResponse> Services { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
-        Services = await _db.Services
-            .OrderBy(s => s.ServiceName)
-            .Select(s => new ServiceItem(
-                s.ServiceId,
-                s.ServiceName,
-                s.BasePrice,
-                s.EstimatedDuration,
-                s.IsActive
-            ))
-            .ToListAsync();
+        Services = await _referenceQueryService.GetServicesAsync(Filter);
     }
-
-    public record ServiceItem(
-        int ServiceId,
-        string ServiceName,
-        decimal BasePrice,
-        int? EstimatedDuration,
-        bool IsActive
-    );
 }

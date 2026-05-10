@@ -20,7 +20,13 @@
         <a asp-page="/Parts/Index">Детали</a>
         <a asp-page="/Technicians/Index">Мастера</a>
         <a asp-page="/Reports/Index">Отчёты</a>
-    </nav> 
+
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-page="/Admin/Users/Index">Администрирование</a>
+        }
+    </nav>
+
 
     <div class="topbar__user">
         @if (User.Identity?.IsAuthenticated == true)

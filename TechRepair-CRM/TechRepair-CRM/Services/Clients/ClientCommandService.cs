@@ -59,6 +59,27 @@ public class ClientCommandService : IClientCommandService
         if (!deviceTypeExists)
             throw new InvalidOperationException("Тип устройства не найден.");
     }
+    
+    public async Task UpdateClientAsync(int clientId, ClientFormRequest request)
+    {
+        var client = await CheckClientExistsAsync(clientId);
+        
+        client.FirstName = request.FirstName;
+        client.LastName = request.LastName;
+        client.Phone = request.Phone;
+        client.Email = request.Email;
+        client.Address = request.Address;
+        client.Notes = request.Notes;
+
+        await _db.SaveChangesAsync();
+    }
+    
+    private async Task<Client> CheckClientExistsAsync(int clientId)
+    {
+        var client = await _db.Clients.FindAsync(clientId);
+        return client ?? throw new InvalidOperationException("Клиент не найден.");
+    }
+
 
     public async Task<int> AddDeviceToClientAsync(int clientId, AddDeviceRequest request)
     {
@@ -83,14 +104,5 @@ public class ClientCommandService : IClientCommandService
         await _db.SaveChangesAsync();
 
         return device.DeviceId;
-    }
-
-    private async Task CheckClientExistsAsync(int clientId)
-    {
-        var clientExists = await _db.Clients
-            .AnyAsync(c => c.ClientId == clientId);
-
-        if (!clientExists)
-            throw new InvalidOperationException("Клиент не найден.");
     }
 }

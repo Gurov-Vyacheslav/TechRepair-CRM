@@ -30,8 +30,9 @@ public class CreateModel : PageModel
 
         try
         {
-            await _referenceCommandService.CreateTechnicianAsync(Input);
-            return RedirectToPage("/Technicians/Index");
+            var technicianId = await _referenceCommandService.CreateTechnicianAsync(Input);
+
+            return RedirectToPage("/Admin/Users/Create", new { technicianId });
         }
         catch (Exception ex)
         {

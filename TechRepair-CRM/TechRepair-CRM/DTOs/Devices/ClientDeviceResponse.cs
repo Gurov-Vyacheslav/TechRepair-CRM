@@ -9,5 +9,7 @@ public record ClientDeviceResponse(
     DateOnly? PurchaseDate,
     string? EquipmentDescription,
     string? ExternalCondition,
-    string? Notes
+    string? Notes,
+    int? LatestOrderId,
+    string? LatestOrderNumber
 );

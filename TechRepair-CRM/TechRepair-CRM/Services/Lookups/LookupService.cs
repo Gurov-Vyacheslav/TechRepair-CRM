@@ -35,14 +35,38 @@ public class LookupService : ILookupService
             select new SelectListItem
             {
                 Value = d.DeviceId.ToString(),
-                Text =
-                    c.LastName + " " + c.FirstName + " — " +
-                    dt.TypeName + " " +
-                    (d.Brand ?? "") + " " +
-                    (d.Model ?? "") + " " +
-                    (d.SerialNumber ?? "")
+                Text = c.LastName + " " + c.FirstName + " — " +
+                       dt.TypeName + " " +
+                       (d.Brand ?? "") + " " +
+                       (d.Model ?? "") + " " +
+                       (d.SerialNumber ?? "")
             }
         ).ToListAsync();
+    }
+
+    public async Task<List<SelectListItem>> GetClientsAsync()
+    {
+        return await _db.Clients
+            .OrderBy(c => c.LastName)
+            .ThenBy(c => c.FirstName)
+            .Select(c => new SelectListItem
+            {
+                Value = c.ClientId.ToString(),
+                Text = c.LastName + " " + c.FirstName + " — " + c.Phone
+            })
+            .ToListAsync();
+    }
+
+    public async Task<List<SelectListItem>> GetOrderStatusesAsync()
+    {
+        return await _db.OrderStatuses
+            .OrderBy(s => s.StatusId)
+            .Select(s => new SelectListItem
+            {
+                Value = s.StatusName,
+                Text = s.StatusName
+            })
+            .ToListAsync();
     }
 
     public async Task<List<SelectListItem>> GetActiveServicesAsync()
@@ -54,19 +78,6 @@ public class LookupService : ILookupService
             {
                 Value = s.ServiceId.ToString(),
                 Text = s.ServiceName + " — " + s.BasePrice + " ₽"
-            })
-            .ToListAsync();
-    }
-    
-    public async Task<List<SelectListItem>> GetActivePartsAsync()
-    {
-        return await _db.Parts
-            .Where(p => p.IsActive)
-            .OrderBy(p => p.PartName)
-            .Select(p => new SelectListItem
-            {
-                Value = p.PartId.ToString(),
-                Text = p.PartName + " — " + p.DefaultPrice + " ₽"
             })
             .ToListAsync();
     }
@@ -84,16 +95,16 @@ public class LookupService : ILookupService
             })
             .ToListAsync();
     }
-    
-    public async Task<List<SelectListItem>> GetClientsAsync()
+
+    public async Task<List<SelectListItem>> GetActivePartsAsync()
     {
-        return await _db.Clients
-            .OrderBy(c => c.LastName)
-            .ThenBy(c => c.FirstName)
-            .Select(c => new SelectListItem
+        return await _db.Parts
+            .Where(p => p.IsActive)
+            .OrderBy(p => p.PartName)
+            .Select(p => new SelectListItem
             {
-                Value = c.ClientId.ToString(),
-                Text = c.LastName + " " + c.FirstName + " — " + c.Phone
+                Value = p.PartId.ToString(),
+                Text = p.PartName + " — " + (p.DefaultPrice ?? 0) + " ₽"
             })
             .ToListAsync();
     }

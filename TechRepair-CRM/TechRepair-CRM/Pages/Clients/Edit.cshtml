@@ -1,0 +1,26 @@
+﻿@page "{id:int}"
+@model TechRepair_CRM.Pages.Clients.EditModel
+
+@{
+    ViewData["Title"] = "Изменить клиента";
+}
+
+<h1>Изменить клиента</h1>
+
+<div class="form-page">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="form-field"><label asp-for="Input.FirstName" class="form-label"></label><input asp-for="Input.FirstName" class="form-control" /><span asp-validation-for="Input.FirstName" class="validation-message"></span></div>
+        <div class="form-field"><label asp-for="Input.LastName" class="form-label"></label><input asp-for="Input.LastName" class="form-control" /><span asp-validation-for="Input.LastName" class="validation-message"></span></div>
+        <div class="form-field"><label asp-for="Input.Phone" class="form-label"></label><input asp-for="Input.Phone" class="form-control" /><span asp-validation-for="Input.Phone" class="validation-message"></span></div>
+        <div class="form-field"><label asp-for="Input.Email" class="form-label"></label><input asp-for="Input.Email" class="form-control" /><span asp-validation-for="Input.Email" class="validation-message"></span></div>
+        <div class="form-field"><label asp-for="Input.Address" class="form-label"></label><input asp-for="Input.Address" class="form-control" /></div>
+        <div class="form-field"><label asp-for="Input.Notes" class="form-label"></label><textarea asp-for="Input.Notes" class="form-control"></textarea></div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a asp-page="/Clients/Index" class="btn btn-secondary">Отмена</a>
+        </div>
+    </form>
+</div>

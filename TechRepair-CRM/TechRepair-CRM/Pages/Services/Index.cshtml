@@ -11,6 +11,31 @@
     <a asp-page="/Services/Create" class="btn btn-primary">Добавить услугу</a>
 </div>
 
+<div class="filter-panel">
+    <form method="get">
+        <div class="filter-grid">
+            <div class="form-field">
+                <label asp-for="Filter.Search" class="form-label">Поиск</label>
+                <input asp-for="Filter.Search" class="form-control" />
+            </div>
+
+            <div class="form-field">
+                <label asp-for="Filter.IsActive" class="form-label">Активность</label>
+                <select asp-for="Filter.IsActive" class="form-control">
+                    <option value="">Все</option>
+                    <option value="true">Активные</option>
+                    <option value="false">Неактивные</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-secondary">Найти</button>
+            <a asp-page="/Services/Index" class="btn btn-secondary">Сбросить</a>
+        </div>
+    </form>
+</div>
+
 <table>
     <thead>
     <tr>
@@ -32,7 +57,7 @@
             <td>
                 <a asp-page="/Services/Edit"
                    asp-route-id="@service.ServiceId"
-                   class="btn btn-small">
+                   class="btn btn-small btn-primary">
                     Изменить
                 </a>
             </td>

@@ -64,6 +64,29 @@ public class OrderCommandService : IOrderCommandService
             .Select(os => os.StatusId)
             .SingleAsync();
     }
+    
+    public async Task UpdateOrderAsync(int orderId, OrderEditRequest request)
+    {
+        await EnsureOrderCanBeModifiedAsync(orderId);
+
+        var order = await CheckOrderExistsAsync(orderId);
+
+        order.ProblemDescription = request.ProblemDescription;
+        order.DiagnosticResult = request.DiagnosticResult;
+        order.EstimatedCost = request.EstimatedCost;
+        order.WarrantyMonths = request.WarrantyMonths;
+        order.IsWarrantyRepair = request.IsWarrantyRepair;
+        order.Notes = request.Notes;
+
+        await _db.SaveChangesAsync();
+    }
+    
+    private async Task<RepairOrder> CheckOrderExistsAsync(int orderId)
+    {
+        var order = await _db.RepairOrders.FindAsync(orderId);
+
+        return order ?? throw new InvalidOperationException("Заказ не найден.");
+    }
 
     public async Task AddServiceToOrderAsync(int orderId, AddOrderServiceRequest request)
     {
@@ -217,14 +240,6 @@ public class OrderCommandService : IOrderCommandService
 
         // Переплату дополнительно защитит триггер БД.
         await _db.SaveChangesAsync();
-    }
-
-    private async Task<RepairOrder> CheckOrderExistsAsync(int orderId)
-    {
-        var order = await _db.RepairOrders
-            .FirstOrDefaultAsync(o => o.OrderId == orderId);
-
-        return order ?? throw new InvalidOperationException("Заказ не найден.");
     }
 
     public async Task ChangeStatusAsync(int orderId, string newStatus, string? comment)

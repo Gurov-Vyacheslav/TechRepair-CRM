@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using TechRepair_CRM.DTOs.References;
 using TechRepair_CRM.DTOs.References.Parts;
 using TechRepair_CRM.Services.References;
 
@@ -15,10 +17,13 @@ public class IndexModel : PageModel
         _referenceQueryService = referenceQueryService;
     }
 
-    public List<PartItemResponse> Parts { get; private set; } = [];
+    [BindProperty(SupportsGet = true)]
+    public ReferenceFilterRequest Filter { get; set; } = new();
+
+    public IReadOnlyList<PartItemResponse> Parts { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
-        Parts = await _referenceQueryService.GetPartsAsync();
+        Parts = await _referenceQueryService.GetPartsAsync(Filter);
     }
 }

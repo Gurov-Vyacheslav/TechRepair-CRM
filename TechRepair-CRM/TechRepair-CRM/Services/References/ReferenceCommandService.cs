@@ -86,7 +86,7 @@ public class ReferenceCommandService : IReferenceCommandService
         return part ?? throw new InvalidOperationException("Деталь не найдена.");
     }
 
-    public async Task CreateTechnicianAsync(TechnicianFormRequest request)
+    public async Task<int> CreateTechnicianAsync(TechnicianFormRequest request)
     {
         await  CheckTechnicianEmailExistsAsync(request.Email);
         await  CheckTechnicianPhoneExistsAsync(request.Phone);
@@ -104,6 +104,8 @@ public class ReferenceCommandService : IReferenceCommandService
 
         _db.Technicians.Add(technician);
         await _db.SaveChangesAsync();
+
+        return technician.TechnicianId;
     }
 
     private async Task CheckTechnicianEmailExistsAsync(string email, int exceptId = 0)

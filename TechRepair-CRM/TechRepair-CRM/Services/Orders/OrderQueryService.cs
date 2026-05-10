@@ -5,6 +5,7 @@ using TechRepair_CRM.DTOs.Orders.Parts;
 using TechRepair_CRM.DTOs.Orders.Payments;
 using TechRepair_CRM.DTOs.Orders.Services;
 using TechRepair_CRM.DTOs.Orders.StatusHistory;
+using TechRepair_CRM.Models.Db;
 
 namespace TechRepair_CRM.Services.Orders;
 
@@ -17,26 +18,77 @@ public class OrderQueryService : IOrderQueryService
         _db = db;
     }
     
-    public async Task<List<OrderListItemResponse>> GetOrdersAsync()
+    public async Task<List<OrderListItemResponse>> GetOrdersAsync(OrderFilterRequest? filter = null)
     {
-        var orders = await _db.VwOrderFullInfos
-            .OrderByDescending(o => o.CreatedAt)
-            .Select(order => new OrderListItemResponse(
-                order.OrderId.Value,
-                order.OrderNumber,
-                order.CreatedAt.Value,
-                order.OrderStatus,
-                order.ClientFirstName + " " + order.ClientLastName,
-                order.ClientPhone,
-                order.DeviceType,
-                order.Brand,
-                order.Model,
-                order.TotalCost ?? 0,
-                order.PaidAmount ?? 0,
-                order.RemainingAmount ?? 0))
-            .ToListAsync();
+        var query = GetFilteredOrders(filter);
 
+        return await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Select(o => new OrderListItemResponse(
+                o.OrderId.Value,
+                o.OrderNumber,
+                o.CreatedAt.Value,
+                o.OrderStatus,
+                o.ClientFirstName + " " + o.ClientLastName,
+                o.ClientPhone,
+                o.DeviceType,
+                o.Brand,
+                o.Model,
+                o.TotalCost.Value,
+                o.PaidAmount.Value,
+                o.RemainingAmount.Value
+            ))
+            .ToListAsync();
+    }
+    
+
+    private IQueryable<VwOrderFullInfo> GetFilteredOrders(OrderFilterRequest? filter)
+    {
+        var orders = _db.VwOrderFullInfos.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter?.OrderNumber))
+        {
+            orders = orders.Where(o => o.OrderNumber.Contains(filter.OrderNumber));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter?.Status))
+        {
+            orders = orders.Where(o => o.OrderStatus == filter.Status);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter?.ClientPhone))
+        {
+            orders = orders.Where(o => o.ClientPhone.Contains(filter.ClientPhone));
+        }
+
+        if (filter?.CreatedFrom is not null)
+        {
+            orders = orders.Where(o => o.CreatedAt >= filter.CreatedFrom.Value);
+        }
+
+        if (filter?.CreatedTo is not null)
+        {
+            var toExclusive = filter.CreatedTo.Value.Date.AddDays(1);
+            orders = orders.Where(o => o.CreatedAt < toExclusive);
+        }
+        
         return orders;
+    } 
+    
+    public async Task<OrderEditRequest?> GetOrderEditFormAsync(int orderId)
+    {
+        return await _db.RepairOrders
+            .Where(o => o.OrderId == orderId)
+            .Select(o => new OrderEditRequest
+            {
+                ProblemDescription = o.ProblemDescription,
+                DiagnosticResult = o.DiagnosticResult,
+                EstimatedCost = o.EstimatedCost,
+                WarrantyMonths = o.WarrantyMonths,
+                IsWarrantyRepair = o.IsWarrantyRepair,
+                Notes = o.Notes
+            })
+            .FirstOrDefaultAsync();
     }
     
     public async Task<OrderDetailsResponse?> GetOrderDetailsAsync(int orderId)

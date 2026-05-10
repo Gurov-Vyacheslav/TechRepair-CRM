@@ -1,67 +1,46 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using TechRepair_CRM.Data;
 using TechRepair_CRM.DTOs.References.Services;
+using TechRepair_CRM.Services.References;
 
 namespace TechRepair_CRM.Pages.Services;
 
 [Authorize(Roles = "Admin,Manager")]
 public class EditModel : PageModel
 {
-    private readonly RepairServiceDbContext _db;
+    private readonly IReferenceQueryService _referenceQueryService;
+    private readonly IReferenceCommandService _referenceCommandService;
 
-    public EditModel(RepairServiceDbContext db)
+    public EditModel(IReferenceQueryService referenceQueryService, IReferenceCommandService referenceCommandService)
     {
-        _db = db;
+        _referenceQueryService = referenceQueryService;
+        _referenceCommandService = referenceCommandService;
     }
 
     [BindProperty]
     public ServiceFormRequest Input { get; set; } = new();
 
-    public int ServiceId { get; private set; }
-
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var service = await _db.Services.FindAsync(id);
-
-        if (service is null)
-            return NotFound();
-
-        ServiceId = id;
-
-        Input = new ServiceFormRequest
-        {
-            ServiceName = service.ServiceName,
-            Description = service.Description,
-            BasePrice = service.BasePrice,
-            EstimatedDuration = service.EstimatedDuration,
-            IsActive = service.IsActive
-        };
-
+        var service = await _referenceQueryService.GetServiceFormAsync(id);
+        if (service is null) return NotFound();
+        Input = service;
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(int id)
     {
-        ServiceId = id;
-
-        if (!ModelState.IsValid)
+        if (!ModelState.IsValid) return Page();
+        try
+        {
+            await _referenceCommandService.UpdateServiceAsync(id, Input);
+            return RedirectToPage("/Services/Index");
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
             return Page();
-
-        var service = await _db.Services.FindAsync(id);
-
-        if (service is null)
-            return NotFound();
-
-        service.ServiceName = Input.ServiceName;
-        service.Description = Input.Description;
-        service.BasePrice = Input.BasePrice;
-        service.EstimatedDuration = Input.EstimatedDuration;
-        service.IsActive = Input.IsActive;
-
-        await _db.SaveChangesAsync();
-
-        return RedirectToPage("/Services/Index");
+        }
     }
 }

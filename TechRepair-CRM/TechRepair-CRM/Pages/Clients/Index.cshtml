@@ -8,9 +8,33 @@
 <h1>Клиенты</h1>
 
 <div class="actions">
-    <a asp-page="/Clients/CreateWithDevice" class="btn btn-primary">
-        Создать клиента с устройством
-    </a>
+    <a asp-page="/Clients/CreateWithDevice" class="btn btn-primary">Создать клиента с устройством</a>
+</div>
+
+<div class="filter-panel">
+    <form method="get">
+        <div class="filter-grid">
+            <div class="form-field">
+                <label asp-for="Filter.FullName" class="form-label">ФИО</label>
+                <input asp-for="Filter.FullName" class="form-control" />
+            </div>
+
+            <div class="form-field">
+                <label asp-for="Filter.Phone" class="form-label">Телефон</label>
+                <input asp-for="Filter.Phone" class="form-control" />
+            </div>
+
+            <div class="form-field">
+                <label asp-for="Filter.Email" class="form-label">Email</label>
+                <input asp-for="Filter.Email" class="form-control" />
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-secondary">Найти</button>
+            <a asp-page="/Clients/Index" class="btn btn-secondary">Сбросить</a>
+        </div>
+    </form>
 </div>
 
 @if (Model.Clients.Count == 0)
@@ -38,17 +62,9 @@ else
                 <td>@client.Email</td>
                 <td>@client.RegistrationDate.ToString("dd.MM.yyyy")</td>
                 <td>
-                    <a asp-page="/Clients/Details"
-                       asp-route-id="@client.ClientId"
-                       class="btn btn-small">
-                        Открыть
-                    </a>
-
-                    <a asp-page="/Clients/AddDevice"
-                       asp-route-clientId="@client.ClientId"
-                       class="btn btn-small btn-primary">
-                        Добавить устройство
-                    </a>
+                    <a asp-page="/Clients/Details" asp-route-id="@client.ClientId" class="btn btn-small">Открыть</a>
+                    <a asp-page="/Clients/Edit" asp-route-id="@client.ClientId" class="btn btn-small">Изменить</a>
+                    <a asp-page="/Clients/AddDevice" asp-route-clientId="@client.ClientId" class="btn btn-small btn-primary">Добавить устройство</a>
                 </td>
             </tr>
         }

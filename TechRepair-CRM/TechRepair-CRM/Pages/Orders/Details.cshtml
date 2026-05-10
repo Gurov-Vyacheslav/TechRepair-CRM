@@ -76,6 +76,12 @@
            class="btn btn-primary">
             Добавить оплату
         </a>
+        
+        <a asp-page="/Orders/Edit"
+           asp-route-id="@Model.Order.OrderId"
+           class="btn btn-primary">
+            Изменить заказ
+        </a>
     </div>
 }
 
@@ -96,39 +102,25 @@
         <div class="status-buttons">
             @if (Model.Order.OrderStatus == "Created")
             {
-                <button type="submit" name="newStatus" value="Accepted" class="btn btn-primary">
-                    Принять
-                </button>
+                <button type="submit" name="newStatus" value="Accepted" class="btn btn-primary">Принять</button>
 
-                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">
-                    Отменить
-                </button>
+                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">Отменить</button>
             }
             else if (Model.Order.OrderStatus == "Accepted")
             {
-                <button type="submit" name="newStatus" value="InRepair" class="btn btn-primary">
-                    Начать ремонт
-                </button>
+                <button type="submit" name="newStatus" value="InRepair" class="btn btn-primary">Начать ремонт</button>
 
-                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">
-                    Отменить
-                </button>
+                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">Отменить</button>
             }
             else if (Model.Order.OrderStatus == "InRepair")
             {
-                <button type="submit" name="newStatus" value="Ready" class="btn btn-primary">
-                    Готов
-                </button>
+                <button type="submit" name="newStatus" value="Ready" class="btn btn-primary">Готов</button>
 
-                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">
-                    Отменить
-                </button>
+                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">Отменить</button>
             }
             else if (Model.Order.OrderStatus == "Ready")
             {
-                <button type="submit" name="newStatus" value="Closed" class="btn btn-primary">
-                    Закрыть
-                </button>
+                <button type="submit" name="newStatus" value="Closed" class="btn btn-primary">Закрыть</button>
             }
         </div>
     </form>
@@ -136,6 +128,14 @@
 
 
 <h2>Клиент</h2>
+
+<div class="actions">
+    <a asp-page="/Clients/Details"
+       asp-route-id="@Model.Order.ClientId"
+       class="btn btn-secondary">
+        Открыть клиента
+    </a>
+</div>
 
 <table>
     <tr>

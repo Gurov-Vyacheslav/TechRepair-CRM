@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TechRepair_CRM.DTOs.Clients;
 using TechRepair_CRM.Services.Clients;
@@ -15,10 +16,13 @@ public class IndexModel : PageModel
         _clientQueryService = clientQueryService;
     }
 
-    public List<ClientListItemResponse> Clients { get; private set; } = [];
+    [BindProperty(SupportsGet = true)]
+    public ClientFilterRequest Filter { get; set; } = new();
+
+    public IReadOnlyList<ClientListItemResponse> Clients { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
-        Clients = await _clientQueryService.GetClientsAsync();
+        Clients = await _clientQueryService.GetClientsAsync(Filter);
     }
 }

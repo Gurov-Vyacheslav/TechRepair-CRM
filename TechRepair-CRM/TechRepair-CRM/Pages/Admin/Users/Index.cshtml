@@ -1,0 +1,87 @@
+﻿@page
+@model TechRepair_CRM.Pages.Admin.Users.IndexModel
+
+@{
+    ViewData["Title"] = "Пользователи";
+}
+
+<h1>Пользователи</h1>
+
+<div class="actions">
+    <a asp-page="/Admin/Users/Create" class="btn btn-primary">
+        Создать пользователя
+    </a>
+</div>
+
+<div class="filter-panel">
+    <form method="get">
+        <div class="filter-grid">
+            <div class="form-field">
+                <label asp-for="Filter.Search" class="form-label">Поиск</label>
+                <input asp-for="Filter.Search" class="form-control" />
+            </div>
+
+            <div class="form-field">
+                <label asp-for="Filter.Role" class="form-label">Роль</label>
+                <select asp-for="Filter.Role" class="form-control">
+                    <option value="">Все</option>
+                    @foreach (var role in Model.Roles)
+                    {
+                        <option value="@role">@role</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label asp-for="Filter.IsLocked" class="form-label">Статус</label>
+                <select asp-for="Filter.IsLocked" class="form-control">
+                    <option value="">Все</option>
+                    <option value="false">Активные</option>
+                    <option value="true">Заблокированные</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-secondary">Найти</button>
+            <a asp-page="/Admin/Users/Index" class="btn btn-secondary">Сбросить</a>
+        </div>
+    </form>
+</div>
+
+@if (Model.Users.Count == 0)
+{
+    <p>Пользователей пока нет.</p>
+}
+else
+{
+    <table>
+        <thead>
+        <tr>
+            <th>Email</th>
+            <th>Роль</th>
+            <th>Мастер</th>
+            <th>Активен</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.Email</td>
+                <td>@user.Role</td>
+                <td>@user.TechnicianFullName</td>
+                <td>@(user.IsActive ? "Да" : "Нет")</td>
+                <td>
+                    <a asp-page="/Admin/Users/Edit"
+                       asp-route-id="@user.Id"
+                       class="btn btn-small btn-primary">
+                        Изменить
+                    </a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

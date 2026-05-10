@@ -7,6 +7,39 @@
 
 <h1>Заказы</h1>
 
+<div class="actions">
+    <a asp-page="/Orders/Create" class="btn btn-primary">Создать заказ</a>
+</div>
+
+<form method="get" class="status-form">
+    <div class="form-field">
+        <label asp-for="Filter.OrderNumber" class="form-label"></label>
+        <input asp-for="Filter.OrderNumber" class="form-control"/>
+    </div>
+    <div class="form-field">
+        <label asp-for="Filter.Status" class="form-label"></label>
+        <select asp-for="Filter.Status" asp-items="Model.Statuses" class="form-control">
+            <option value="">Все статусы</option>
+        </select>
+    </div>
+    <div class="form-field">
+        <label asp-for="Filter.ClientPhone" class="form-label"></label>
+        <input asp-for="Filter.ClientPhone" class="form-control"/>
+    </div>
+    <div class="form-field">
+        <label asp-for="Filter.CreatedFrom" class="form-label"></label>
+        <input asp-for="Filter.CreatedFrom" class="form-control form-control-sm" type="date"/>
+    </div>
+    <div class="form-field">
+        <label asp-for="Filter.CreatedTo" class="form-label"></label>
+        <input asp-for="Filter.CreatedTo" class="form-control form-control-sm" type="date"/>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-secondary">Найти</button>
+        <a asp-page="/Orders/Index" class="btn btn-secondary">Сбросить</a>
+    </div>
+</form>
+
 @if (Model.Orders.Count == 0)
 {
     <p>Заказов пока нет.</p>
@@ -42,7 +75,11 @@ else
                 <td>@order.PaidAmount</td>
                 <td>@order.RemainingAmount</td>
                 <td>
-                    <a asp-page="/Orders/Details" asp-route-id="@order.OrderId">Открыть</a>
+                    <a asp-page="/Orders/Details"
+                       asp-route-id="@order.OrderId"
+                       class="btn btn-small btn-secondary">
+                        Открыть
+                    </a>
                 </td>
             </tr>
         }

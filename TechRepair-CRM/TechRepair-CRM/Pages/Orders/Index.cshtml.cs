@@ -1,6 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using TechRepair_CRM.DTOs.Orders;
+using TechRepair_CRM.Services.Lookups;
 using TechRepair_CRM.Services.Orders;
 
 namespace TechRepair_CRM.Pages.Orders;
@@ -9,16 +12,23 @@ namespace TechRepair_CRM.Pages.Orders;
 public class IndexModel : PageModel
 {
     private readonly IOrderQueryService _orderQueryService;
+    private readonly ILookupService _lookupService;
 
-    public IndexModel(IOrderQueryService orderQueryService)
+    public IndexModel(IOrderQueryService orderQueryService, ILookupService lookupService)
     {
         _orderQueryService = orderQueryService;
+        _lookupService = lookupService;
     }
 
-    public List<OrderListItemResponse> Orders { get; private set; } 
+    [BindProperty(SupportsGet = true)]
+    public OrderFilterRequest Filter { get; set; } = new();
+
+    public List<OrderListItemResponse> Orders { get; private set; } = [];
+    public List<SelectListItem> Statuses { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
-        Orders = await _orderQueryService.GetOrdersAsync();
+        Statuses = await _lookupService.GetOrderStatusesAsync();
+        Orders = await _orderQueryService.GetOrdersAsync(Filter);
     }
 }

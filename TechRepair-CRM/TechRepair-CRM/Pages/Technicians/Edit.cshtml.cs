@@ -22,17 +22,14 @@ public class EditModel : PageModel
 
     [BindProperty]
     public TechnicianFormRequest Input { get; set; } = new();
-
-    public int TechnicianId { get; private set; }
-
+    
     public async Task<IActionResult> OnGetAsync(int id)
     {
         var technician = await _referenceQueryService.GetTechnicianFormAsync(id);
 
         if (technician is null)
             return NotFound();
-
-        TechnicianId = id;
+        
         Input = technician;
 
         return Page();
@@ -40,7 +37,6 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(int id)
     {
-        TechnicianId = id;
 
         if (!ModelState.IsValid)
             return Page();

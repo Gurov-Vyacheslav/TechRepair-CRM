@@ -12,6 +12,6 @@ public record ClientDetailsResponse(
     string? Address,
     DateTime RegistrationDate,
     string? Notes,
-    List<ClientDeviceResponse> Devices,
-    List<OrderListItemResponse> Orders
+    IReadOnlyList<ClientDeviceResponse> Devices,
+    IReadOnlyList<OrderListItemResponse> Orders
 );

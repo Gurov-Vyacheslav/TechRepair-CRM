@@ -11,6 +11,31 @@
     <a asp-page="/Parts/Create" class="btn btn-primary">Добавить деталь</a>
 </div>
 
+<div class="filter-panel">
+    <form method="get">
+        <div class="filter-grid">
+            <div class="form-field">
+                <label asp-for="Filter.Search" class="form-label">Поиск</label>
+                <input asp-for="Filter.Search" class="form-control" />
+            </div>
+
+            <div class="form-field">
+                <label asp-for="Filter.IsActive" class="form-label">Активность</label>
+                <select asp-for="Filter.IsActive" class="form-control">
+                    <option value="">Все</option>
+                    <option value="true">Активные</option>
+                    <option value="false">Неактивные</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-secondary">Найти</button>
+            <a asp-page="/Parts/Index" class="btn btn-secondary">Сбросить</a>
+        </div>
+    </form>
+</div>
+
 @if (Model.Parts.Count == 0)
 {
     <p>Деталей пока нет.</p>
@@ -40,7 +65,7 @@ else
                 <td>
                     <a asp-page="/Parts/Edit"
                        asp-route-id="@part.PartId"
-                       class="btn btn-small">
+                       class="btn btn-small btn-primary">
                         Изменить
                     </a>
                 </td>

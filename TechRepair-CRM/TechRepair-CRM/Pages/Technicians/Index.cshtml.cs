@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using TechRepair_CRM.DTOs.References;
 using TechRepair_CRM.DTOs.References.Technicians;
 using TechRepair_CRM.Services.References;
 
@@ -15,10 +17,13 @@ public class IndexModel : PageModel
         _referenceQueryService = referenceQueryService;
     }
 
-    public List<TechnicianItemResponse> Technicians { get; private set; } = [];
+    [BindProperty(SupportsGet = true)]
+    public ReferenceFilterRequest Filter { get; set; } = new();
+
+    public IReadOnlyList<TechnicianItemResponse> Technicians { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
-        Technicians = await _referenceQueryService.GetTechniciansAsync();
+        Technicians = await _referenceQueryService.GetTechniciansAsync(Filter);
     }
 }

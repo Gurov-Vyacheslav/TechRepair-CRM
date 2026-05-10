@@ -1,8 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Data;
+using TechRepair_CRM.DTOs.References;
 using TechRepair_CRM.DTOs.References.Parts;
 using TechRepair_CRM.DTOs.References.Services;
 using TechRepair_CRM.DTOs.References.Technicians;
+using TechRepair_CRM.Models.Db;
 
 namespace TechRepair_CRM.Services.References;
 
@@ -14,10 +16,13 @@ public class ReferenceQueryService : IReferenceQueryService
     {
         _db = db;
     }
+    
 
-    public async Task<List<ServiceItemResponse>> GetServicesAsync()
+    public async Task<IReadOnlyList<ServiceItemResponse>> GetServicesAsync(ReferenceFilterRequest? filter = null)
     {
-        return await _db.Services
+        var query = GetFilteredServices(filter);
+
+        return await query
             .OrderBy(s => s.ServiceName)
             .Select(s => new ServiceItemResponse(
                 s.ServiceId,
@@ -27,6 +32,27 @@ public class ReferenceQueryService : IReferenceQueryService
                 s.IsActive
             ))
             .ToListAsync();
+    }
+
+    private IQueryable<Service> GetFilteredServices(ReferenceFilterRequest? filter)
+    {
+        var services = _db.Services.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter?.Search))
+        {
+            var search = filter.Search.Trim().ToLower();
+
+            services = services.Where(s =>
+                s.ServiceName.ToLower().Contains(search) ||
+                (s.Description != null && s.Description.ToLower().Contains(search)));
+        }
+
+        if (filter?.IsActive is not null)
+        {
+            services = services.Where(s => s.IsActive == filter.IsActive.Value);
+        }
+
+        return services;
     }
 
     public async Task<ServiceFormRequest?> GetServiceFormAsync(int id)
@@ -44,9 +70,11 @@ public class ReferenceQueryService : IReferenceQueryService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<PartItemResponse>> GetPartsAsync()
+    public async Task<IReadOnlyList<PartItemResponse>> GetPartsAsync(ReferenceFilterRequest? filter = null)
     {
-        return await _db.Parts
+        var query = GetFilteredParts(filter);
+
+        return await query
             .OrderBy(p => p.PartName)
             .Select(p => new PartItemResponse(
                 p.PartId,
@@ -57,6 +85,29 @@ public class ReferenceQueryService : IReferenceQueryService
                 p.IsActive
             ))
             .ToListAsync();
+    }
+
+    private IQueryable<Part> GetFilteredParts(ReferenceFilterRequest? filter)
+    {
+        var parts = _db.Parts.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter?.Search))
+        {
+            var search = filter.Search.Trim().ToLower();
+
+            parts = parts.Where(p =>
+                p.PartName.ToLower().Contains(search) ||
+                (p.PartNumber != null && p.PartNumber.ToLower().Contains(search)) ||
+                (p.Manufacturer != null && p.Manufacturer.ToLower().Contains(search)) ||
+                (p.Description != null && p.Description.ToLower().Contains(search)));
+        }
+
+        if (filter?.IsActive is not null)
+        {
+            parts = parts.Where(p => p.IsActive == filter.IsActive.Value);
+        }
+
+        return parts;
     }
 
     public async Task<PartFormRequest?> GetPartFormAsync(int id)
@@ -75,9 +126,11 @@ public class ReferenceQueryService : IReferenceQueryService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<List<TechnicianItemResponse>> GetTechniciansAsync()
+    public async Task<IReadOnlyList<TechnicianItemResponse>> GetTechniciansAsync(ReferenceFilterRequest? filter = null)
     {
-        return await _db.Technicians
+        var query = GetFilteredTechnicians(filter);
+
+        return await query
             .OrderBy(t => t.LastName)
             .ThenBy(t => t.FirstName)
             .Select(t => new TechnicianItemResponse(
@@ -90,6 +143,30 @@ public class ReferenceQueryService : IReferenceQueryService
                 t.IsActive
             ))
             .ToListAsync();
+    }
+
+    private IQueryable<Technician> GetFilteredTechnicians(ReferenceFilterRequest? filter)
+    {
+        var technicians = _db.Technicians.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter?.Search))
+        {
+            var search = filter.Search.Trim().ToLower();
+
+            technicians = technicians.Where(t =>
+                (t.LastName + " " + t.FirstName).ToLower().Contains(search) ||
+                (t.FirstName + " " + t.LastName).ToLower().Contains(search) ||
+                t.Email.ToLower().Contains(search) ||
+                t.Phone.Contains(search) ||
+                (t.Specialization != null && t.Specialization.ToLower().Contains(search)));
+        }
+
+        if (filter?.IsActive is not null)
+        {
+            technicians = technicians.Where(t => t.IsActive == filter.IsActive.Value);
+        }
+        
+        return technicians;
     }
 
     public async Task<TechnicianFormRequest?> GetTechnicianFormAsync(int id)

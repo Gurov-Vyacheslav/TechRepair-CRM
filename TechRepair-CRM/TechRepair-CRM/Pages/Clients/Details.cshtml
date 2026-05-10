@@ -9,41 +9,20 @@
 
 <div class="actions">
     <a asp-page="/Clients/Index" class="btn btn-secondary">Назад</a>
-
-    <a asp-page="/Clients/AddDevice"
-       asp-route-clientId="@Model.Client.ClientId"
-       class="btn btn-primary">
-        Добавить устройство
-    </a>
+    <a asp-page="/Clients/Edit" asp-route-id="@Model.Client.ClientId" class="btn">Изменить клиента</a>
+    <a asp-page="/Clients/AddDevice" asp-route-clientId="@Model.Client.ClientId" class="btn btn-primary">Добавить устройство</a>
 </div>
 
 <h2>Данные клиента</h2>
-
 <table>
-    <tr>
-        <th>Телефон</th>
-        <td>@Model.Client.Phone</td>
-    </tr>
-    <tr>
-        <th>Email</th>
-        <td>@Model.Client.Email</td>
-    </tr>
-    <tr>
-        <th>Адрес</th>
-        <td>@Model.Client.Address</td>
-    </tr>
-    <tr>
-        <th>Дата регистрации</th>
-        <td>@Model.Client.RegistrationDate.ToString("dd.MM.yyyy")</td>
-    </tr>
-    <tr>
-        <th>Заметки</th>
-        <td>@Model.Client.Notes</td>
-    </tr>
+    <tr><th>Телефон</th><td>@Model.Client.Phone</td></tr>
+    <tr><th>Email</th><td>@Model.Client.Email</td></tr>
+    <tr><th>Адрес</th><td>@Model.Client.Address</td></tr>
+    <tr><th>Дата регистрации</th><td>@Model.Client.RegistrationDate.ToString("dd.MM.yyyy")</td></tr>
+    <tr><th>Заметки</th><td>@Model.Client.Notes</td></tr>
 </table>
 
 <h2>Устройства</h2>
-
 @if (Model.Client.Devices.Count == 0)
 {
     <p>У клиента пока нет устройств.</p>
@@ -59,6 +38,7 @@ else
             <th>Серийный номер</th>
             <th>Комплектация</th>
             <th>Состояние</th>
+            <th>Действия</th>
         </tr>
         </thead>
         <tbody>
@@ -71,6 +51,30 @@ else
                 <td>@device.SerialNumber</td>
                 <td>@device.EquipmentDescription</td>
                 <td>@device.ExternalCondition</td>
+                <td>
+                    <a asp-page="/Devices/Edit"
+                       asp-route-id="@device.DeviceId"
+                       class="btn btn-small btn-primary">
+                        Изменить
+                    </a>
+
+                    @if (device.LatestOrderId is not null)
+                    {
+                        <a asp-page="/Orders/Details"
+                           asp-route-id="@device.LatestOrderId.Value"
+                           class="btn btn-small btn-secondary">
+                            Открыть заказ
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-page="/Orders/Create"
+                           asp-route-deviceId="@device.DeviceId"
+                           class="btn btn-small btn-primary">
+                            Создать заказ
+                        </a>
+                    }
+                </td>
             </tr>
         }
         </tbody>
@@ -78,7 +82,6 @@ else
 }
 
 <h2>Заказы клиента</h2>
-
 @if (Model.Client.Orders.Count == 0)
 {
     <p>У клиента пока нет заказов.</p>
@@ -86,18 +89,7 @@ else
 else
 {
     <table>
-        <thead>
-        <tr>
-            <th>Номер</th>
-            <th>Дата</th>
-            <th>Статус</th>
-            <th>Устройство</th>
-            <th>Стоимость</th>
-            <th>Оплачено</th>
-            <th>Остаток</th>
-            <th>Действия</th>
-        </tr>
-        </thead>
+        <thead><tr><th>Номер</th><th>Дата</th><th>Статус</th><th>Устройство</th><th>Стоимость</th><th>Оплачено</th><th>Остаток</th><th>Действия</th></tr></thead>
         <tbody>
         @foreach (var order in Model.Client.Orders)
         {
@@ -109,13 +101,7 @@ else
                 <td>@order.TotalCost</td>
                 <td>@order.PaidAmount</td>
                 <td>@order.RemainingAmount</td>
-                <td>
-                    <a asp-page="/Orders/Details"
-                       asp-route-id="@order.OrderId"
-                       class="btn btn-small">
-                        Открыть
-                    </a>
-                </td>
+                <td><a asp-page="/Orders/Details" asp-route-id="@order.OrderId" class="btn btn-small">Открыть</a></td>
             </tr>
         }
         </tbody>

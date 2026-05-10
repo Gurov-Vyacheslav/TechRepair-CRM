@@ -12,6 +12,6 @@ public interface IReferenceCommandService
     Task CreatePartAsync(PartFormRequest request);
     Task UpdatePartAsync(int id, PartFormRequest request);
 
-    Task CreateTechnicianAsync(TechnicianFormRequest request);
+    Task<int> CreateTechnicianAsync(TechnicianFormRequest request);
     Task UpdateTechnicianAsync(int id, TechnicianFormRequest request);
 }

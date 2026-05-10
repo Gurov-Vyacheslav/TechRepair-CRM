@@ -1,46 +1,39 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using TechRepair_CRM.Data;
+using TechRepair_CRM.DTOs.References;
 using TechRepair_CRM.DTOs.References.Services;
-using TechRepair_CRM.Models.Db;
+using TechRepair_CRM.Services.References;
 
 namespace TechRepair_CRM.Pages.Services;
 
 [Authorize(Roles = "Admin,Manager")]
 public class CreateModel : PageModel
 {
-    private readonly RepairServiceDbContext _db;
+    private readonly IReferenceCommandService _referenceCommandService;
 
-    public CreateModel(RepairServiceDbContext db)
+    public CreateModel(IReferenceCommandService referenceCommandService)
     {
-        _db = db;
+        _referenceCommandService = referenceCommandService;
     }
 
     [BindProperty]
     public ServiceFormRequest Input { get; set; } = new();
 
-    public void OnGet()
-    {
-    }
+    public void OnGet() { }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid)
-            return Page();
-
-        var service = new Service
+        if (!ModelState.IsValid) return Page();
+        try
         {
-            ServiceName = Input.ServiceName,
-            Description = Input.Description,
-            BasePrice = Input.BasePrice,
-            EstimatedDuration = Input.EstimatedDuration,
-            IsActive = Input.IsActive
-        };
-
-        _db.Services.Add(service);
-        await _db.SaveChangesAsync();
-
-        return RedirectToPage("/Services/Index");
+            await _referenceCommandService.CreateServiceAsync(Input);
+            return RedirectToPage("/Services/Index");
+        }
+        catch (Exception ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return Page();
+        }
     }
 }

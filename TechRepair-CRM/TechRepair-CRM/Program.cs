@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Auth;
 using TechRepair_CRM.Data;
+using TechRepair_CRM.Services.Admin;
 using TechRepair_CRM.Services.Clients;
+using TechRepair_CRM.Services.Devices;
 using TechRepair_CRM.Services.Lookups;
 using TechRepair_CRM.Services.Orders;
 using TechRepair_CRM.Services.References;
@@ -60,6 +62,10 @@ builder.Services.AddScoped<IReferenceQueryService, ReferenceQueryService>();
 builder.Services.AddScoped<IReferenceCommandService, ReferenceCommandService>();
 
 builder.Services.AddScoped<IReportQueryService, ReportQueryService>();
+
+builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+builder.Services.AddScoped<IDeviceQueryService, DeviceQueryService>();
+builder.Services.AddScoped<IDeviceCommandService, DeviceCommandService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
