@@ -63,6 +63,12 @@ else
                 <td>@technician.Specialization</td>
                 <td>@(technician.IsActive ? "Да" : "Нет")</td>
                 <td>
+                    <a asp-page="/Technicians/Details"
+                       asp-route-id="@technician.TechnicianId"
+                       class="btn btn-small btn-secondary">
+                        Открыть
+                    </a>
+
                     <a asp-page="/Technicians/Edit"
                        asp-route-id="@technician.TechnicianId"
                        class="btn btn-small btn-primary">

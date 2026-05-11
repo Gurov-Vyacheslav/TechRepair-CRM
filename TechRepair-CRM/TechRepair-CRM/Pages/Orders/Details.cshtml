@@ -222,7 +222,7 @@ else
                 <td>
                     @if (service.TechnicianId is not null)
                     {
-                        if (User.IsInRole("Admin"))
+                        if (canManageOrder)
                         {
                             <a asp-page="/Technicians/Details"
                                asp-route-id="@service.TechnicianId.Value"
