@@ -8,7 +8,7 @@ using TechRepair_CRM.Services.Orders;
 
 namespace TechRepair_CRM.Pages.Orders;
 
-[Authorize]
+[Authorize(Roles = "Admin,Manager")]
 public class IndexModel : PageModel
 {
     private readonly IOrderQueryService _orderQueryService;
@@ -23,12 +23,16 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public OrderFilterRequest Filter { get; set; } = new();
 
-    public List<OrderListItemResponse> Orders { get; private set; } = [];
-    public List<SelectListItem> Statuses { get; private set; } = [];
+    public IReadOnlyList<OrderListItemResponse> Orders { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> Statuses { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> Technicians { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> DeviceTypes { get; private set; } = [];
 
     public async Task OnGetAsync()
     {
-        Statuses = await _lookupService.GetOrderStatusesAsync();
         Orders = await _orderQueryService.GetOrdersAsync(Filter);
+        Statuses = await _lookupService.GetOrderStatusesAsync();
+        Technicians = await _lookupService.GetActiveTechniciansAsync();
+        DeviceTypes = await _lookupService.GetDeviceTypesAsync();
     }
 }

@@ -9,10 +9,12 @@ namespace TechRepair_CRM.Pages.Account;
 public class LoginModel : PageModel
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public LoginModel(SignInManager<ApplicationUser> signInManager)
+    public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
     {
         _signInManager = signInManager;
+        _userManager = userManager;
     }
 
     [BindProperty]
@@ -52,7 +54,24 @@ public class LoginModel : PageModel
             lockoutOnFailure: false);
 
         if (result.Succeeded)
-            return LocalRedirect(ReturnUrl);
+        {
+            var user = await _userManager.FindByEmailAsync(Input.Email);
+
+            if (user is not null)
+            {
+                var isTechnician = await _userManager.IsInRoleAsync(user, "Technician");
+                var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+                var isManager = await _userManager.IsInRoleAsync(user, "Manager");
+
+                if (isTechnician && !isAdmin && !isManager)
+                    return RedirectToPage("/Technicians/MyWork");
+            }
+
+            if (!string.IsNullOrWhiteSpace(ReturnUrl) && Url.IsLocalUrl(ReturnUrl))
+                return LocalRedirect(ReturnUrl);
+
+            return RedirectToPage("/Orders/Index");
+        }
 
         ModelState.AddModelError(string.Empty, "Неверный email или пароль");
         return Page();

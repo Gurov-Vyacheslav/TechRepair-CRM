@@ -13,26 +13,46 @@
 
 <form method="get" class="status-form">
     <div class="form-field">
-        <label asp-for="Filter.OrderNumber" class="form-label"></label>
+        <label asp-for="Filter.OrderNumber" class="form-label">Номер заказа</label>
         <input asp-for="Filter.OrderNumber" class="form-control"/>
     </div>
     <div class="form-field">
-        <label asp-for="Filter.Status" class="form-label"></label>
+        <label asp-for="Filter.Status" class="form-label">Статус</label>
         <select asp-for="Filter.Status" asp-items="Model.Statuses" class="form-control">
             <option value="">Все статусы</option>
         </select>
     </div>
     <div class="form-field">
-        <label asp-for="Filter.ClientPhone" class="form-label"></label>
+        <label asp-for="Filter.ClientPhone" class="form-label">Телефон клиента</label>
         <input asp-for="Filter.ClientPhone" class="form-control"/>
     </div>
     <div class="form-field">
-        <label asp-for="Filter.CreatedFrom" class="form-label"></label>
+        <label asp-for="Filter.CreatedFrom" class="form-label">Дата создания От</label>
         <input asp-for="Filter.CreatedFrom" class="form-control form-control-sm" type="date"/>
     </div>
     <div class="form-field">
-        <label asp-for="Filter.CreatedTo" class="form-label"></label>
+        <label asp-for="Filter.CreatedTo" class="form-label">Дата создания До</label>
         <input asp-for="Filter.CreatedTo" class="form-control form-control-sm" type="date"/>
+    </div>
+    <div class="form-field">
+        <label asp-for="Filter.TechnicianId" class="form-label">Мастер</label>
+        <select asp-for="Filter.TechnicianId" asp-items="Model.Technicians" class="form-control">
+            <option value="">Все</option>
+        </select>
+    </div>
+    <div class="form-field">
+        <label asp-for="Filter.DeviceTypeId" class="form-label">Тип устройства</label>
+        <select asp-for="Filter.DeviceTypeId" asp-items="Model.DeviceTypes" class="form-control">
+            <option value="">Все</option>
+        </select>
+    </div>
+    <div class="form-field">
+        <label asp-for="Filter.HasDebt" class="form-label">Задолженность</label>
+        <select asp-for="Filter.HasDebt" class="form-control">
+            <option value="">Все</option>
+            <option value="true">Есть долг</option>
+            <option value="false">Без долга</option>
+        </select>
     </div>
     <div class="form-actions">
         <button type="submit" class="btn btn-secondary">Найти</button>

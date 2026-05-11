@@ -4,6 +4,10 @@
 @{
     ViewData["Title"] = $"Заказ {Model.Order.OrderNumber}";
 }
+@{
+    var canManageOrder = User.IsInRole("Admin") || User.IsInRole("Manager");
+    var isAdmin = User.IsInRole("Admin");
+}
 
 <h1>Заказ @Model.Order.OrderNumber</h1>
 
@@ -16,18 +20,24 @@
 {
     <p class="message-error">@TempData["Error"]</p>
 }
-
 <p>
-    <a asp-page="/Orders/Index">← Назад к заказам</a>
+    @if (canManageOrder)
+    {
+        <a asp-page="/Orders/Index">← Назад к заказам</a>
+    }
+    else
+    {
+        <a asp-page="/Technicians/MyOrders">← Назад к заказам</a>
+    }
 </p>
 
 <h2>Основная информация</h2>
 
+<span class="status-badge status-@Model.Order.OrderStatus.ToLower()">
+    @Model.Order.OrderStatus
+</span>
+
 <table>
-    <tr>
-        <th>Статус</th>
-        <td>@Model.Order.OrderStatus</td>
-    </tr>
     <tr>
         <th>Дата создания</th>
         <td>@Model.Order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
@@ -54,7 +64,7 @@
     </tr>
 </table>
 
-@if (Model.Order.OrderStatus is not "Closed" and not "Canceled")
+@if (Model.Order.OrderStatus is not ("Closed" or "Canceled") && canManageOrder)
 {
     <h2>Действия</h2>
 
@@ -85,7 +95,7 @@
     </div>
 }
 
-@if (Model.Order.OrderStatus is not "Closed" and not "Canceled")
+@if (Model.Order.OrderStatus is not ("Closed" or "Canceled") && canManageOrder)
 {
     <h2>Смена статуса</h2>
 
@@ -129,13 +139,16 @@
 
 <h2>Клиент</h2>
 
-<div class="actions">
-    <a asp-page="/Clients/Details"
-       asp-route-id="@Model.Order.ClientId"
-       class="btn btn-secondary">
-        Открыть клиента
-    </a>
-</div>
+@if (canManageOrder)
+{
+    <div class="actions">
+        <a asp-page="/Clients/Details"
+           asp-route-id="@Model.Order.ClientId"
+           class="btn btn-secondary">
+            Открыть клиента
+        </a>
+    </div>
+}
 
 <table>
     <tr>
@@ -206,7 +219,27 @@ else
         {
             <tr>
                 <td>@service.ServiceName</td>
-                <td>@service.TechnicianFullName</td>
+                <td>
+                    @if (service.TechnicianId is not null)
+                    {
+                        if (User.IsInRole("Admin"))
+                        {
+                            <a asp-page="/Technicians/Details"
+                               asp-route-id="@service.TechnicianId.Value"
+                               class="btn btn-small btn-secondary">
+                                @(service.TechnicianFullName ?? "Открыть мастера")
+                            </a>
+                        }
+                        else
+                        {
+                            <span>@service.TechnicianFullName</span>
+                        }
+                    }
+                    else
+                    {
+                        <span>—</span>
+                    }
+                </td>
                 <td>@service.Quantity</td>
                 <td>@service.PriceAtMoment</td>
                 <td>@service.TotalPrice</td>
@@ -223,9 +256,16 @@ else
                             </button>
                         </form>
                     }
-                    else
+                    @if (canManageOrder &&
+                         Model.Order.OrderStatus is not "Closed" and not "Canceled" &&
+                         service.CompletedAt is null)
                     {
-                        <span>—</span>
+                        <a asp-page="/Orders/EditService"
+                           asp-route-orderId="@Model.Order.OrderId"
+                           asp-route-serviceId="@service.ServiceId"
+                           class="btn btn-small btn-primary">
+                            Изменить
+                        </a>
                     }
                 </td>
             </tr>
@@ -250,6 +290,7 @@ else
             <th>Количество</th>
             <th>Цена</th>
             <th>Сумма</th>
+            <th>Действие</th>
         </tr>
         </thead>
         <tbody>
@@ -261,6 +302,18 @@ else
                 <td>@part.Quantity</td>
                 <td>@part.PriceAtMoment</td>
                 <td>@part.TotalPrice</td>
+                <td>
+                    @if (canManageOrder &&
+                         Model.Order.OrderStatus is not "Closed" and not "Canceled")
+                    {
+                        <a asp-page="/Orders/EditPart"
+                           asp-route-orderId="@Model.Order.OrderId"
+                           asp-route-partId="@part.PartId"
+                           class="btn btn-small btn-primary">
+                            Изменить
+                        </a>
+                    }
+                </td>
             </tr>
         }
         </tbody>

@@ -13,7 +13,7 @@ public class LookupService : ILookupService
         _db = db;
     }
 
-    public async Task<List<SelectListItem>> GetDeviceTypesAsync()
+    public async Task<IReadOnlyList<SelectListItem>> GetDeviceTypesAsync()
     {
         return await _db.DeviceTypes
             .OrderBy(t => t.TypeName)
@@ -25,7 +25,7 @@ public class LookupService : ILookupService
             .ToListAsync();
     }
 
-    public async Task<List<SelectListItem>> GetDevicesAsync()
+    public async Task<IReadOnlyList<SelectListItem>> GetDevicesAsync()
     {
         return await (
             from d in _db.Devices
@@ -44,7 +44,7 @@ public class LookupService : ILookupService
         ).ToListAsync();
     }
 
-    public async Task<List<SelectListItem>> GetClientsAsync()
+    public async Task<IReadOnlyList<SelectListItem>> GetClientsAsync()
     {
         return await _db.Clients
             .OrderBy(c => c.LastName)
@@ -57,7 +57,7 @@ public class LookupService : ILookupService
             .ToListAsync();
     }
 
-    public async Task<List<SelectListItem>> GetOrderStatusesAsync()
+    public async Task<IReadOnlyList<SelectListItem>> GetOrderStatusesAsync()
     {
         return await _db.OrderStatuses
             .OrderBy(s => s.StatusId)
@@ -69,7 +69,7 @@ public class LookupService : ILookupService
             .ToListAsync();
     }
 
-    public async Task<List<SelectListItem>> GetActiveServicesAsync()
+    public async Task<IReadOnlyList<SelectListItem>> GetActiveServicesAsync()
     {
         return await _db.Services
             .Where(s => s.IsActive)
@@ -82,7 +82,7 @@ public class LookupService : ILookupService
             .ToListAsync();
     }
 
-    public async Task<List<SelectListItem>> GetActiveTechniciansAsync()
+    public async Task<IReadOnlyList<SelectListItem>> GetActiveTechniciansAsync()
     {
         return await _db.Technicians
             .Where(t => t.IsActive)
@@ -96,7 +96,7 @@ public class LookupService : ILookupService
             .ToListAsync();
     }
 
-    public async Task<List<SelectListItem>> GetActivePartsAsync()
+    public async Task<IReadOnlyList<SelectListItem>> GetActivePartsAsync()
     {
         return await _db.Parts
             .Where(p => p.IsActive)

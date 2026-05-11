@@ -4,11 +4,14 @@ using TechRepair_CRM.Auth;
 using TechRepair_CRM.Data;
 using TechRepair_CRM.Services.Admin;
 using TechRepair_CRM.Services.Clients;
+using TechRepair_CRM.Services.CurrentUser;
 using TechRepair_CRM.Services.Devices;
+using TechRepair_CRM.Services.Layout;
 using TechRepair_CRM.Services.Lookups;
 using TechRepair_CRM.Services.Orders;
 using TechRepair_CRM.Services.References;
 using TechRepair_CRM.Services.Reports;
+using TechRepair_CRM.Services.Technicians;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,6 +52,9 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<ILayoutUserContextService, LayoutUserContextService>();
 
 builder.Services.AddScoped<IOrderQueryService, OrderQueryService>();
 builder.Services.AddScoped<IOrderCommandService, OrderCommandService>();
@@ -66,6 +72,9 @@ builder.Services.AddScoped<IReportQueryService, ReportQueryService>();
 builder.Services.AddScoped<IUserAdminService, UserAdminService>();
 builder.Services.AddScoped<IDeviceQueryService, DeviceQueryService>();
 builder.Services.AddScoped<IDeviceCommandService, DeviceCommandService>();
+
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<ITechnicianWorkService, TechnicianWorkService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

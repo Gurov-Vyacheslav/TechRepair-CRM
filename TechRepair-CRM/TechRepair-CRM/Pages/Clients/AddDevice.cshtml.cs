@@ -27,7 +27,7 @@ public class AddDeviceModel : PageModel
 
     public int ClientId { get; private set; }
 
-    public List<SelectListItem> DeviceTypes { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> DeviceTypes { get; private set; } = [];
 
     public async Task OnGetAsync(int clientId)
     {

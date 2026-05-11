@@ -6,7 +6,7 @@ using TechRepair_CRM.Services.Orders;
 
 namespace TechRepair_CRM.Pages.Orders;
 
-[Authorize]
+[Authorize(Roles = "Admin,Manager,Technician")]
 public class DetailsModel : PageModel
 {
     private readonly IOrderQueryService _orderQueryService;

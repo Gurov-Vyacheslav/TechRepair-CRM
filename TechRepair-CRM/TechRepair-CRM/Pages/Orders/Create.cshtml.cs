@@ -25,7 +25,7 @@ public class CreateModel : PageModel
     [BindProperty]
     public CreateOrderRequest Input { get; set; } = new();
 
-    public List<SelectListItem> Devices { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> Devices { get; private set; } = [];
 
     public async Task OnGetAsync(int? deviceId)
     {

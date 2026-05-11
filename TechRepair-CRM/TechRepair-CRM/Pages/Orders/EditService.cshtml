@@ -1,0 +1,39 @@
+﻿@page "{orderId:int}/{serviceId:int}"
+@model TechRepair_CRM.Pages.Orders.EditServiceModel
+
+@{
+    ViewData["Title"] = "Изменить услугу заказа";
+}
+
+<h1>Изменить услугу заказа</h1>
+
+<div class="form-page">
+    <form method="post">
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="form-field">
+            <label asp-for="Input.Quantity" class="form-label"></label>
+            <input asp-for="Input.Quantity" class="form-control form-control-sm" />
+            <span asp-validation-for="Input.Quantity" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.TechnicianId" class="form-label"></label>
+            <select asp-for="Input.TechnicianId" asp-items="Model.Technicians" class="form-control">
+                <option value="">Мастер не назначен</option>
+            </select>
+            <span asp-validation-for="Input.TechnicianId" class="validation-message"></span>
+        </div>
+
+        <div class="form-field">
+            <label asp-for="Input.Notes" class="form-label"></label>
+            <textarea asp-for="Input.Notes" class="form-control"></textarea>
+            <span asp-validation-for="Input.Notes" class="validation-message"></span>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <a asp-page="/Orders/Details" asp-route-id="@Model.OrderId" class="btn btn-secondary">Назад</a>
+        </div>
+    </form>
+</div>

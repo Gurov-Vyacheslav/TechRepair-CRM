@@ -25,7 +25,7 @@ public class EditModel : PageModel
     [BindProperty]
     public DeviceFormRequest Input { get; set; } = new();
 
-    public List<SelectListItem> DeviceTypes { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> DeviceTypes { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync(int id)
     {

@@ -277,3 +277,78 @@ textarea.form-control {
     gap: 8px;
     flex-wrap: wrap;
 }
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 16px 0 24px;
+}
+
+.info-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #f9fafb;
+    padding: 16px;
+}
+
+.info-card h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.status-created {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.status-accepted {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.status-inrepair {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-ready {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-closed {
+    background: #bbf7d0;
+    color: #14532d;
+}
+
+.status-canceled {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.money-positive {
+    font-weight: 600;
+    color: #166534;
+}
+
+.money-debt {
+    font-weight: 600;
+    color: #991b1b;
+}
+
+.table-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}

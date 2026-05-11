@@ -97,7 +97,7 @@ public class UserAdminService : IUserAdminService
 
             if (filter.IsLocked.HasValue)
             {
-                var now = DateTimeOffset.Now;
+                var now = DateTimeOffset.UtcNow;
                 if (filter.IsLocked.Value)
                     usersQuery = usersQuery.Where(u => u.LockoutEnd != null && u.LockoutEnd > now);
                 else

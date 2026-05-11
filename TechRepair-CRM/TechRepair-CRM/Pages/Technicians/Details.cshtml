@@ -1,0 +1,163 @@
+﻿@page "{id:int}"
+@model TechRepair_CRM.Pages.Technicians.DetailsModel
+
+@{
+    ViewData["Title"] = "Карточка мастера";
+}
+
+<h1>@Model.Technician.LastName @Model.Technician.FirstName</h1>
+
+<div class="actions">
+    <a asp-page="/Technicians/Index" class="btn btn-secondary">Назад</a>
+    <a asp-page="/Technicians/Edit" asp-route-id="@Model.Technician.TechnicianId" class="btn btn-primary">
+        Изменить
+    </a>
+</div>
+
+<h2>Данные мастера</h2>
+
+<table>
+    <tr>
+        <th>Email</th>
+        <td>@Model.Technician.Email</td>
+    </tr>
+    <tr>
+        <th>Телефон</th>
+        <td>@Model.Technician.Phone</td>
+    </tr>
+    <tr>
+        <th>Специализация</th>
+        <td>@Model.Technician.Specialization</td>
+    </tr>
+    <tr>
+        <th>Активен</th>
+        <td>@(Model.Technician.IsActive ? "Да" : "Нет")</td>
+    </tr>
+    <tr>
+        <th>Заметки</th>
+        <td>@Model.Technician.Notes</td>
+    </tr>
+</table>
+
+<div class="actions">
+    <a asp-page="/Technicians/Details"
+       asp-route-id="@Model.Technician.TechnicianId"
+       asp-route-tab="work"
+       class="btn @(Model.Tab == "work" ? "btn-primary" : "btn-secondary")">
+        Работы
+    </a>
+
+    <a asp-page="/Technicians/Details"
+       asp-route-id="@Model.Technician.TechnicianId"
+       asp-route-tab="orders"
+       class="btn @(Model.Tab == "orders" ? "btn-primary" : "btn-secondary")">
+        Прикреплённые заказы
+    </a>
+</div>
+
+@if (Model.Tab == "work")
+{
+    <h2>Работы мастера</h2>
+
+    @if (Model.Works.Count == 0)
+    {
+        <p>Назначенных работ нет.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+            <tr>
+                <th>Заказ</th>
+                <th>Дата</th>
+                <th>Статус</th>
+                <th>Клиент</th>
+                <th>Устройство</th>
+                <th>Услуга</th>
+                <th>Количество</th>
+                <th>Завершена</th>
+                <th>Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model.Works)
+            {
+                <tr>
+                    <td>@item.OrderNumber</td>
+                    <td>@item.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                    <td>
+                        <span class="status-badge status-@item.OrderStatus.ToLower()">
+                            @item.OrderStatus
+                        </span>
+                    </td>
+                    <td>@item.ClientFullName</td>
+                    <td>@item.DeviceType @item.Brand @item.Model</td>
+                    <td>@item.ServiceName</td>
+                    <td>@item.Quantity</td>
+                    <td>@(item.CompletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                    <td>
+                        <a asp-page="/Orders/Details"
+                           asp-route-id="@item.OrderId"
+                           class="btn btn-small btn-secondary">
+                            Открыть заказ
+                        </a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+}
+else
+{
+    <h2>Прикреплённые заказы</h2>
+
+    @if (Model.Orders.Count == 0)
+    {
+        <p>Прикреплённых заказов нет.</p>
+    }
+    else
+    {
+        <table>
+            <thead>
+            <tr>
+                <th>Номер</th>
+                <th>Дата</th>
+                <th>Статус</th>
+                <th>Клиент</th>
+                <th>Телефон</th>
+                <th>Устройство</th>
+                <th>Стоимость</th>
+                <th>Остаток</th>
+                <th>Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var order in Model.Orders)
+            {
+                <tr>
+                    <td>@order.OrderNumber</td>
+                    <td>@order.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                    <td>
+                        <span class="status-badge status-@order.OrderStatus.ToLower()">
+                            @order.OrderStatus
+                        </span>
+                    </td>
+                    <td>@order.ClientFullName</td>
+                    <td>@order.ClientPhone</td>
+                    <td>@order.DeviceType @order.Brand @order.Model</td>
+                    <td>@order.TotalCost</td>
+                    <td>@order.RemainingAmount</td>
+                    <td>
+                        <a asp-page="/Orders/Details"
+                           asp-route-id="@order.OrderId"
+                           class="btn btn-small btn-secondary">
+                            Открыть
+                        </a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    }
+}

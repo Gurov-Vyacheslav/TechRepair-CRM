@@ -4,11 +4,11 @@ namespace TechRepair_CRM.Services.Lookups;
 
 public interface ILookupService
 {
-    Task<List<SelectListItem>> GetDeviceTypesAsync();
-    Task<List<SelectListItem>> GetDevicesAsync();
-    Task<List<SelectListItem>> GetClientsAsync();
-    Task<List<SelectListItem>> GetOrderStatusesAsync();
-    Task<List<SelectListItem>> GetActiveServicesAsync();
-    Task<List<SelectListItem>> GetActiveTechniciansAsync();
-    Task<List<SelectListItem>> GetActivePartsAsync();
+    Task<IReadOnlyList<SelectListItem>> GetDeviceTypesAsync();
+    Task<IReadOnlyList<SelectListItem>> GetDevicesAsync();
+    Task<IReadOnlyList<SelectListItem>> GetClientsAsync();
+    Task<IReadOnlyList<SelectListItem>> GetOrderStatusesAsync();
+    Task<IReadOnlyList<SelectListItem>> GetActiveServicesAsync();
+    Task<IReadOnlyList<SelectListItem>> GetActiveTechniciansAsync();
+    Task<IReadOnlyList<SelectListItem>> GetActivePartsAsync();
 }

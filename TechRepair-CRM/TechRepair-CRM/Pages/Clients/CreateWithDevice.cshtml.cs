@@ -25,7 +25,7 @@ public class CreateWithDeviceModel : PageModel
     [BindProperty]
     public CreateClientWithDeviceRequest Input { get; set; } = new();
 
-    public List<SelectListItem> DeviceTypes { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> DeviceTypes { get; private set; } = [];
 
     public async Task OnGetAsync()
     {

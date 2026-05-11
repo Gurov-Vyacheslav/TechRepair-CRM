@@ -27,7 +27,7 @@ public class AddPartModel : PageModel
 
     public int OrderId { get; private set; }
 
-    public List<SelectListItem> Parts { get; private set; } = [];
+    public IReadOnlyList<SelectListItem> Parts { get; private set; } = [];
 
     public async Task OnGetAsync(int orderId)
     {

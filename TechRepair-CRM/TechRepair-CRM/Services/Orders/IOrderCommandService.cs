@@ -14,4 +14,6 @@ public interface IOrderCommandService
     Task CompleteServiceAsync(int orderId, int serviceId);
     Task AddPaymentAsync(int orderId, AddPaymentRequest request);
     Task ChangeStatusAsync(int orderId, string newStatus, string? comment);
+    Task UpdateOrderServiceAsync(int orderId, int serviceId, EditOrderServiceRequest request);
+    Task UpdateOrderPartAsync(int orderId, int partId, EditOrderPartRequest request);
 }

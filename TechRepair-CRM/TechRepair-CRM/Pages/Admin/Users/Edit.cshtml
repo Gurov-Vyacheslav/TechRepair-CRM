@@ -53,7 +53,17 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Сохранить</button>
-            <a asp-page="/Admin/Users/Index" class="btn btn-secondary">Отмена</a>
+
+            @if (Model.Input.TechnicianId is not null)
+            {
+                <a asp-page="/Technicians/Details"
+                   asp-route-id="@Model.Input.TechnicianId.Value"
+                   class="btn btn-secondary">
+                    Открыть мастера
+                </a>
+            }
+
+            <a asp-page="/Admin/Users/Index" class="btn btn-secondary">Назад</a>
         </div>
     </form>
 </div>

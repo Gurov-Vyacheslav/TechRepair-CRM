@@ -6,6 +6,7 @@ using TechRepair_CRM.DTOs.Orders.Payments;
 using TechRepair_CRM.DTOs.Orders.Services;
 using TechRepair_CRM.DTOs.Orders.StatusHistory;
 using TechRepair_CRM.Models.Db;
+using TechRepair_CRM.Services.CurrentUser;
 
 namespace TechRepair_CRM.Services.Orders;
 
@@ -17,6 +18,7 @@ public class OrderQueryService : IOrderQueryService
     {
         _db = db;
     }
+
     
     public async Task<List<OrderListItemResponse>> GetOrdersAsync(OrderFilterRequest? filter = null)
     {
@@ -70,6 +72,29 @@ public class OrderQueryService : IOrderQueryService
         {
             var toExclusive = filter.CreatedTo.Value.Date.AddDays(1);
             orders = orders.Where(o => o.CreatedAt < toExclusive);
+        }
+        
+        if (filter?.TechnicianId is not null)
+        {
+            orders = orders.Where(o =>
+                _db.OrderServices.Any(os =>
+                    os.OrderId == o.OrderId &&
+                    os.TechnicianId == filter.TechnicianId.Value));
+        }
+
+        if (filter?.DeviceTypeId is not null)
+        {
+            orders = orders.Where(o =>
+                _db.Devices.Any(d =>
+                    d.DeviceId == o.DeviceId &&
+                    d.DeviceTypeId == filter.DeviceTypeId.Value));
+        }
+
+        if (filter?.HasDebt is not null)
+        {
+            orders = filter.HasDebt.Value
+                ? orders.Where(o => o.RemainingAmount > 0)
+                : orders.Where(o => o.RemainingAmount <= 0);
         }
         
         return orders;
@@ -228,5 +253,39 @@ public class OrderQueryService : IOrderQueryService
                 h.Comment
             ))
             .ToListAsync();
+    }
+
+    public async Task<string?> GetOrderStatusAsync(int orderId)
+    {
+        return await (
+            from ro in _db.RepairOrders
+            join status in _db.OrderStatuses on ro.StatusId equals status.StatusId
+            where ro.OrderId == orderId
+            select status.StatusName
+        ).SingleOrDefaultAsync();
+    }
+    
+    public async Task<EditOrderServiceRequest?> GetOrderServiceEditFormAsync(int orderId, int serviceId)
+    {
+        return await _db.OrderServices
+            .Where(os => os.OrderId == orderId && os.ServiceId == serviceId)
+            .Select(os => new EditOrderServiceRequest
+            {
+                Quantity = os.Quantity,
+                TechnicianId = os.TechnicianId,
+                Notes = os.Notes
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<EditOrderPartRequest?> GetOrderPartEditFormAsync(int orderId, int partId)
+    {
+        return await _db.OrderParts
+            .Where(op => op.OrderId == orderId && op.PartId == partId)
+            .Select(op => new EditOrderPartRequest
+            {
+                Quantity = op.Quantity
+            })
+            .FirstOrDefaultAsync();
     }
 }

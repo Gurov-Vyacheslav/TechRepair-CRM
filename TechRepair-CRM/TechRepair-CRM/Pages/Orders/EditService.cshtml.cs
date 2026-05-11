@@ -9,34 +9,50 @@ using TechRepair_CRM.Services.Orders;
 namespace TechRepair_CRM.Pages.Orders;
 
 [Authorize(Roles = "Admin,Manager")]
-public class AddServiceModel : PageModel
+public class EditServiceModel : PageModel
 {
-    private readonly ILookupService _lookupService;
+    private readonly IOrderQueryService _orderQueryService;
     private readonly IOrderCommandService _orderCommandService;
+    private readonly ILookupService _lookupService;
 
-    public AddServiceModel(ILookupService lookupService, IOrderCommandService orderCommandService)
+    public EditServiceModel(
+        IOrderQueryService orderQueryService,
+        IOrderCommandService orderCommandService,
+        ILookupService lookupService)
     {
-        _lookupService = lookupService;
+        _orderQueryService = orderQueryService;
         _orderCommandService = orderCommandService;
+        _lookupService = lookupService;
     }
 
     [BindProperty]
-    public AddOrderServiceRequest Input { get; set; } = new();
+    public EditOrderServiceRequest Input { get; set; } = new();
 
     public int OrderId { get; private set; }
+    public int ServiceId { get; private set; }
 
-    public IReadOnlyList<SelectListItem> Services { get; private set; } = [];
     public IReadOnlyList<SelectListItem> Technicians { get; private set; } = [];
 
-    public async Task OnGetAsync(int orderId)
+    public async Task<IActionResult> OnGetAsync(int orderId, int serviceId)
     {
         OrderId = orderId;
+        ServiceId = serviceId;
+
+        var input = await _orderQueryService.GetOrderServiceEditFormAsync(orderId, serviceId);
+
+        if (input is null)
+            return NotFound();
+
+        Input = input;
         await LoadSelectListsAsync();
+
+        return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync(int orderId)
+    public async Task<IActionResult> OnPostAsync(int orderId, int serviceId)
     {
         OrderId = orderId;
+        ServiceId = serviceId;
 
         if (!ModelState.IsValid)
         {
@@ -46,8 +62,8 @@ public class AddServiceModel : PageModel
 
         try
         {
-            await _orderCommandService.AddServiceToOrderAsync(orderId, Input);
-            return RedirectToPage("/Orders/AddPart", new { orderId });
+            await _orderCommandService.UpdateOrderServiceAsync(orderId, serviceId, Input);
+            return RedirectToPage("/Orders/Details", new { id = orderId });
         }
         catch (Exception ex)
         {
@@ -59,7 +75,6 @@ public class AddServiceModel : PageModel
 
     private async Task LoadSelectListsAsync()
     {
-        Services = await _lookupService.GetActiveServicesAsync();
         Technicians = await _lookupService.GetActiveTechniciansAsync();
     }
 }

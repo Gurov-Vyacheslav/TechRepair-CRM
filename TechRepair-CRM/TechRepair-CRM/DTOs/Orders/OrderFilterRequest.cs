@@ -1,23 +1,20 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace TechRepair_CRM.DTOs.Orders;
+﻿namespace TechRepair_CRM.DTOs.Orders;
 
 public record OrderFilterRequest
 {
-    [Display(Name = "Номер заказа")]
     public string? OrderNumber { get; set; }
 
-    [Display(Name = "Статус")]
     public string? Status { get; set; }
 
-    [Display(Name = "Телефон клиента")]
     public string? ClientPhone { get; set; }
 
-    [DataType(DataType.Date)]
-    [Display(Name = "Дата от")]
     public DateTime? CreatedFrom { get; set; }
 
-    [DataType(DataType.Date)]
-    [Display(Name = "Дата до")]
     public DateTime? CreatedTo { get; set; }
+
+    public int? TechnicianId { get; set; }
+
+    public int? DeviceTypeId { get; set; }
+
+    public bool? HasDebt { get; set; }
 }

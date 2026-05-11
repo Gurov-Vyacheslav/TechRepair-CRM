@@ -1,10 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Data;
-using TechRepair_CRM.DTOs.References;
 using TechRepair_CRM.DTOs.References.Parts;
 using TechRepair_CRM.DTOs.References.Services;
 using TechRepair_CRM.DTOs.References.Technicians;
-using TechRepair_CRM.Models;
 using TechRepair_CRM.Models.Db;
 
 namespace TechRepair_CRM.Services.References;

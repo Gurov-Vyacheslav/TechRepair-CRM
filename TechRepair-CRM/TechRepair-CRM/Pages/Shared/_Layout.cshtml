@@ -1,4 +1,11 @@
-﻿<!DOCTYPE html>
+﻿@using TechRepair_CRM.Services.Layout
+@inject ILayoutUserContextService LayoutUserContextService
+
+@{
+    var layoutUser = await LayoutUserContextService.GetAsync();
+}
+
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="utf-8" />
@@ -10,31 +17,39 @@
 <body>
 <header class="topbar">
     <div class="topbar__brand">
-        <a asp-page="/Orders/Index">TechRepair CRM</a>
+        <span>TechRepair CRM</span>
     </div>
 
     <nav class="topbar__nav">
-        <a asp-page="/Orders/Index">Заказы</a>
-        <a asp-page="/Clients/Index">Клиенты</a>
-        <a asp-page="/Services/Index">Услуги</a>
-        <a asp-page="/Parts/Index">Детали</a>
-        <a asp-page="/Technicians/Index">Мастера</a>
-        <a asp-page="/Reports/Index">Отчёты</a>
+        @if (layoutUser.CanManageSystem)
+        {
+            <a asp-page="/Orders/Index">Заказы</a>
+            <a asp-page="/Clients/Index">Клиенты</a>
+            <a asp-page="/Services/Index">Услуги</a>
+            <a asp-page="/Parts/Index">Детали</a>
+            <a asp-page="/Technicians/Index">Мастера</a>
+            <a asp-page="/Reports/Index">Отчёты</a>
+        }
 
-        @if (User.IsInRole("Admin"))
+        @if (layoutUser.CanShowMyWork)
+        {
+            <a asp-page="/Technicians/MyWork">Мои работы</a>
+            <a asp-page="/Technicians/MyOrders">Мои заказы</a>
+        }
+
+        @if (layoutUser.CanShowAdminPanel)
         {
             <a asp-page="/Admin/Users/Index">Администрирование</a>
         }
     </nav>
 
-
     <div class="topbar__user">
-        @if (User.Identity?.IsAuthenticated == true)
+        @if (layoutUser.IsAuthenticated)
         {
-            <span>@User.Identity.Name</span>
+            <span>@layoutUser.UserName</span>
 
             <form method="post" asp-page="/Account/Logout" class="logout-form">
-                <button type="submit">Выйти</button>
+                <button type="submit" class="btn btn-secondary btn-small">Выйти</button>
             </form>
         }
     </div>
