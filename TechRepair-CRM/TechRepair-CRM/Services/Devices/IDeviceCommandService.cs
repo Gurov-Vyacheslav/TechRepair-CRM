@@ -2,7 +2,7 @@
 
 namespace TechRepair_CRM.Services.Devices;
 
-public partial interface IDeviceCommandService
+public interface IDeviceCommandService
 {
     Task<int> UpdateDeviceAsync(int deviceId, DeviceFormRequest request);
 }

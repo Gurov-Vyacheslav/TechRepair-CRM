@@ -11,16 +11,16 @@ public class TechnicianWorkService : ITechnicianWorkService
 {
     private readonly RepairServiceDbContext _db;
     private readonly ICurrentUserService _currentUserService;
-    private readonly IOrderQueryService _orderQueryService;
+    private readonly IOrderStatusService _orderStatusService;
 
     public TechnicianWorkService(
         RepairServiceDbContext db,
         ICurrentUserService currentUserService,
-        IOrderQueryService orderQueryService)
+        IOrderStatusService orderStatusService)
     {
         _db = db;
         _currentUserService = currentUserService;
-        _orderQueryService = orderQueryService;
+        _orderStatusService = orderStatusService;
     }
 
     public async Task<IReadOnlyList<MyWorkItemResponse>> GetMyWorkAsync(bool onlyActive = true)
@@ -96,13 +96,7 @@ public class TechnicianWorkService : ITechnicianWorkService
         if (technicianId is null)
             throw new InvalidOperationException("Текущий пользователь не привязан к мастеру.");
 
-        var orderStatus = await _orderQueryService.GetOrderStatusAsync(orderId);
-        
-        if (orderStatus is null)
-            throw new InvalidOperationException("Заказ не найден.");
-
-        if (orderStatus != "InRepair")
-            throw new InvalidOperationException("Услугу можно завершить только когда заказ находится в статусе InRepair.");
+        await _orderStatusService.EnsureOrderIsInRepairAsync(orderId);
 
         var orderService = await _db.OrderServices
             .FirstOrDefaultAsync(os =>
@@ -144,23 +138,7 @@ public class TechnicianWorkService : ITechnicianWorkService
                 o.OrderStatus != "Canceled");
         }
 
-        return await query
-            .OrderByDescending(o => o.CreatedAt)
-            .Select(o => new OrderListItemResponse(
-                o.OrderId.Value,
-                o.OrderNumber,
-                o.CreatedAt.Value,
-                o.OrderStatus,
-                o.ClientFirstName + " " + o.ClientLastName,
-                o.ClientPhone,
-                o.DeviceType,
-                o.Brand,
-                o.Model,
-                o.TotalCost.Value,
-                o.PaidAmount.Value,
-                o.RemainingAmount.Value
-            ))
-            .ToListAsync();
+        return await OrderListProjection.GetOrdersListItems(query);
     }
     
     public async Task<TechnicianProfileResponse?> GetTechnicianProfileAsync(int technicianId)

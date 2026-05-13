@@ -15,7 +15,7 @@ public class TechnicianWorkloadModel : PageModel
         _reportQueryService = reportQueryService;
     }
 
-    public List<TechnicianWorkloadReportItem> Items { get; private set; } = [];
+    public IReadOnlyList<TechnicianWorkloadReportItem> Items { get; private set; } = [];
 
     public async Task OnGetAsync()
     {

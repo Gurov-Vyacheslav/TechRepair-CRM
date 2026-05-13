@@ -11,4 +11,5 @@ public interface ILookupService
     Task<IReadOnlyList<SelectListItem>> GetActiveServicesAsync();
     Task<IReadOnlyList<SelectListItem>> GetActiveTechniciansAsync();
     Task<IReadOnlyList<SelectListItem>> GetActivePartsAsync();
+    Task<IReadOnlyList<SelectListItem>> GetAvailableServicesForOrderAsync(int orderId);
 }

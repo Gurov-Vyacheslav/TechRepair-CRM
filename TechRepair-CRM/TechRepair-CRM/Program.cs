@@ -6,6 +6,7 @@ using TechRepair_CRM.Services.Admin;
 using TechRepair_CRM.Services.Clients;
 using TechRepair_CRM.Services.CurrentUser;
 using TechRepair_CRM.Services.Devices;
+using TechRepair_CRM.Services.Entity;
 using TechRepair_CRM.Services.Layout;
 using TechRepair_CRM.Services.Lookups;
 using TechRepair_CRM.Services.Orders;
@@ -70,11 +71,16 @@ builder.Services.AddScoped<IReferenceCommandService, ReferenceCommandService>();
 builder.Services.AddScoped<IReportQueryService, ReportQueryService>();
 
 builder.Services.AddScoped<IUserAdminService, UserAdminService>();
+
 builder.Services.AddScoped<IDeviceQueryService, DeviceQueryService>();
 builder.Services.AddScoped<IDeviceCommandService, DeviceCommandService>();
 
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<ITechnicianWorkService, TechnicianWorkService>();
+builder.Services.AddScoped<IOrderStatusService, OrderStatusService>();
+
+builder.Services.AddScoped<IUserValidationService, UserValidationService>();
+builder.Services.AddScoped<IEntityValidationService, EntityValidationService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

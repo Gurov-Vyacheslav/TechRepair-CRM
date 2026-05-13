@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using TechRepair_CRM.DTOs.Orders;
+using TechRepair_CRM.Services.CurrentUser;
 using TechRepair_CRM.Services.Orders;
 
 namespace TechRepair_CRM.Pages.Orders;
@@ -11,19 +12,24 @@ public class DetailsModel : PageModel
 {
     private readonly IOrderQueryService _orderQueryService;
     private readonly IOrderCommandService _orderCommandService;
+    private readonly ICurrentUserService _currentUserService;
 
     public DetailsModel(
         IOrderQueryService orderQueryService,
-        IOrderCommandService orderCommandService)
+        IOrderCommandService orderCommandService,
+        ICurrentUserService currentUserService)
     {
         _orderQueryService = orderQueryService;
         _orderCommandService = orderCommandService;
+        _currentUserService = currentUserService;
     }
 
     public OrderDetailsResponse Order { get; private set; } = null!;
+    public int? CurrentTechnicianId { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
+        CurrentTechnicianId = await _currentUserService.GetTechnicianIdAsync();
         return await LoadPageAsync(id);
     }
 

@@ -75,6 +75,6 @@ public class CreateModel : PageModel
             })
             .ToList();
 
-        Technicians = await _userAdminService.GetTechnicianOptionsAsync();
+        Technicians = await _userAdminService.GetAvailableTechnicianOptionsForCreateAsync();
     }
 }

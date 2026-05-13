@@ -59,7 +59,7 @@ public class AddServiceModel : PageModel
 
     private async Task LoadSelectListsAsync()
     {
-        Services = await _lookupService.GetActiveServicesAsync();
+        Services = await _lookupService.GetAvailableServicesForOrderAsync(OrderId);
         Technicians = await _lookupService.GetActiveTechniciansAsync();
     }
 }

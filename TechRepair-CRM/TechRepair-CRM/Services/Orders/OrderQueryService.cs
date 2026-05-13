@@ -20,27 +20,11 @@ public class OrderQueryService : IOrderQueryService
     }
 
     
-    public async Task<List<OrderListItemResponse>> GetOrdersAsync(OrderFilterRequest? filter = null)
+    public async Task<IReadOnlyList<OrderListItemResponse>> GetOrdersAsync(OrderFilterRequest? filter = null)
     {
         var query = GetFilteredOrders(filter);
 
-        return await query
-            .OrderByDescending(o => o.CreatedAt)
-            .Select(o => new OrderListItemResponse(
-                o.OrderId.Value,
-                o.OrderNumber,
-                o.CreatedAt.Value,
-                o.OrderStatus,
-                o.ClientFirstName + " " + o.ClientLastName,
-                o.ClientPhone,
-                o.DeviceType,
-                o.Brand,
-                o.Model,
-                o.TotalCost.Value,
-                o.PaidAmount.Value,
-                o.RemainingAmount.Value
-            ))
-            .ToListAsync();
+        return await OrderListProjection.GetOrdersListItems(query);
     }
     
 
@@ -253,16 +237,6 @@ public class OrderQueryService : IOrderQueryService
                 h.Comment
             ))
             .ToListAsync();
-    }
-
-    public async Task<string?> GetOrderStatusAsync(int orderId)
-    {
-        return await (
-            from ro in _db.RepairOrders
-            join status in _db.OrderStatuses on ro.StatusId equals status.StatusId
-            where ro.OrderId == orderId
-            select status.StatusName
-        ).SingleOrDefaultAsync();
     }
     
     public async Task<EditOrderServiceRequest?> GetOrderServiceEditFormAsync(int orderId, int serviceId)

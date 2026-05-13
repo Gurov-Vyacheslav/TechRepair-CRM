@@ -1,24 +1,29 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TechRepair_CRM.Data;
+﻿using TechRepair_CRM.Data;
 using TechRepair_CRM.DTOs.Clients;
 using TechRepair_CRM.DTOs.Devices;
 
 using TechRepair_CRM.Models.Db;
+using TechRepair_CRM.Services.Entity;
 
 namespace TechRepair_CRM.Services.Clients;
 
 public class ClientCommandService : IClientCommandService
 {
     private readonly RepairServiceDbContext _db;
+    private readonly IEntityValidationService _entityValidationService;
 
-    public ClientCommandService(RepairServiceDbContext db)
+    public ClientCommandService(
+        RepairServiceDbContext db,
+        IEntityValidationService entityValidationService)
+
     {
         _db = db;
+        _entityValidationService = entityValidationService;
     }
 
     public async Task<int> CreateClientWithDeviceAsync(CreateClientWithDeviceRequest request)
     {
-        await CheckDeviceTypesAsync(request.DeviceTypeId);
+        await _entityValidationService.EnsureDeviceTypeExistsAsync(request.DeviceTypeId);
 
         var client = new Client
         {
@@ -50,19 +55,10 @@ public class ClientCommandService : IClientCommandService
 
         return device.DeviceId;
     }
-
-    private async Task CheckDeviceTypesAsync(int deviceTypeId)
-    {
-        var deviceTypeExists = await _db.DeviceTypes
-            .AnyAsync(t => t.DeviceTypeId == deviceTypeId);
-
-        if (!deviceTypeExists)
-            throw new InvalidOperationException("Тип устройства не найден.");
-    }
     
     public async Task UpdateClientAsync(int clientId, ClientFormRequest request)
     {
-        var client = await CheckClientExistsAsync(clientId);
+        var client = await _entityValidationService.GetClientOrThrowAsync(clientId);
         
         client.FirstName = request.FirstName;
         client.LastName = request.LastName;
@@ -73,19 +69,13 @@ public class ClientCommandService : IClientCommandService
 
         await _db.SaveChangesAsync();
     }
-    
-    private async Task<Client> CheckClientExistsAsync(int clientId)
-    {
-        var client = await _db.Clients.FindAsync(clientId);
-        return client ?? throw new InvalidOperationException("Клиент не найден.");
-    }
 
 
     public async Task<int> AddDeviceToClientAsync(int clientId, AddDeviceRequest request)
     {
-        await CheckClientExistsAsync(clientId);
+        await _entityValidationService.GetClientOrThrowAsync(clientId);
 
-        await CheckDeviceTypesAsync(request.DeviceTypeId);
+        await _entityValidationService.EnsureDeviceTypeExistsAsync(request.DeviceTypeId);
         
         var device = new Device
         {

@@ -15,7 +15,7 @@ public class RepairDurationModel : PageModel
         _reportQueryService = reportQueryService;
     }
 
-    public List<RepairDurationReportItem> Items { get; private set; } = [];
+    public IReadOnlyList<RepairDurationReportItem> Items { get; private set; } = [];
 
     public async Task OnGetAsync()
     {

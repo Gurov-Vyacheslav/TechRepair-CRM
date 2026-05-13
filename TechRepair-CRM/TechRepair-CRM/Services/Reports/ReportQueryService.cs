@@ -2,6 +2,7 @@
 using TechRepair_CRM.Data;
 using TechRepair_CRM.DTOs.Orders;
 using TechRepair_CRM.DTOs.Reports;
+using TechRepair_CRM.Services.Orders;
 
 namespace TechRepair_CRM.Services.Reports;
 
@@ -14,51 +15,23 @@ public class ReportQueryService : IReportQueryService
         _db = db;
     }
 
-    public async Task<List<OrderListItemResponse>> GetActiveOrdersAsync()
+    public async Task<IReadOnlyList<OrderListItemResponse>> GetActiveOrdersAsync()
     {
-        return await _db.VwOrderFullInfos
-            .Where(o => o.OrderStatus != "Closed" && o.OrderStatus != "Canceled")
-            .OrderByDescending(o => o.CreatedAt)
-            .Select(o => new OrderListItemResponse(
-                o.OrderId.Value,
-                o.OrderNumber,
-                o.CreatedAt.Value,
-                o.OrderStatus,
-                o.ClientFirstName + " " + o.ClientLastName,
-                o.ClientPhone,
-                o.DeviceType,
-                o.Brand,
-                o.Model,
-                o.TotalCost.Value,
-                o.PaidAmount.Value,
-                o.RemainingAmount.Value
-            ))
-            .ToListAsync();
+        var orders = _db.VwOrderFullInfos
+            .Where(o => o.OrderStatus != "Closed" && o.OrderStatus != "Canceled");
+
+        return await OrderListProjection.GetOrdersListItems(orders);
     }
 
-    public async Task<List<OrderListItemResponse>> GetUnpaidOrdersAsync()
+    public async Task<IReadOnlyList<OrderListItemResponse>> GetUnpaidOrdersAsync()
     {
-        return await _db.VwOrderFullInfos
-            .Where(o => o.RemainingAmount > 0 && o.OrderStatus != "Canceled")
-            .OrderByDescending(o => o.CreatedAt)
-            .Select(o => new OrderListItemResponse(
-                o.OrderId.Value,
-                o.OrderNumber,
-                o.CreatedAt.Value,
-                o.OrderStatus,
-                o.ClientFirstName + " " + o.ClientLastName,
-                o.ClientPhone,
-                o.DeviceType,
-                o.Brand,
-                o.Model,
-                o.TotalCost.Value,
-                o.PaidAmount.Value,
-                o.RemainingAmount.Value
-            ))
-            .ToListAsync();
+        var orders = _db.VwOrderFullInfos
+            .Where(o => o.RemainingAmount > 0 && o.OrderStatus != "Canceled");
+        
+        return await OrderListProjection.GetOrdersListItems(orders);
     }
 
-    public async Task<List<TechnicianWorkloadReportItem>> GetTechnicianWorkloadAsync()
+    public async Task<IReadOnlyList<TechnicianWorkloadReportItem>> GetTechnicianWorkloadAsync()
     {
         return await _db.VwTechnicianWorkloads
             .OrderBy(t => t.LastName)
@@ -77,7 +50,7 @@ public class ReportQueryService : IReportQueryService
             .ToListAsync();
     }
 
-    public async Task<List<ServiceStatisticsReportItem>> GetServiceStatisticsAsync()
+    public async Task<IReadOnlyList<ServiceStatisticsReportItem>> GetServiceStatisticsAsync()
     {
         return await _db.VwServiceStatistics
             .OrderByDescending(s => s.TotalRevenue)
@@ -93,7 +66,7 @@ public class ReportQueryService : IReportQueryService
             .ToListAsync();
     }
 
-    public async Task<List<PartUsageStatisticsReportItem>> GetPartUsageStatisticsAsync()
+    public async Task<IReadOnlyList<PartUsageStatisticsReportItem>> GetPartUsageStatisticsAsync()
     {
         return await _db.VwPartUsageStatistics
             .OrderByDescending(p => p.TotalAmount)
@@ -110,7 +83,7 @@ public class ReportQueryService : IReportQueryService
             .ToListAsync();
     }
 
-    public async Task<List<RepairDurationReportItem>> GetRepairDurationAsync()
+    public async Task<IReadOnlyList<RepairDurationReportItem>> GetRepairDurationAsync()
     {
         return await _db.VwRepairDurations
             .OrderByDescending(r => r.CreatedAt)

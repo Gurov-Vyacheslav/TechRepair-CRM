@@ -4,16 +4,22 @@ using TechRepair_CRM.DTOs.References.Parts;
 using TechRepair_CRM.DTOs.References.Services;
 using TechRepair_CRM.DTOs.References.Technicians;
 using TechRepair_CRM.Models.Db;
+using TechRepair_CRM.Services.Entity;
 
 namespace TechRepair_CRM.Services.References;
 
 public class ReferenceCommandService : IReferenceCommandService
 {
     private readonly RepairServiceDbContext _db;
+    private readonly IEntityValidationService _entityValidationService;
 
-    public ReferenceCommandService(RepairServiceDbContext db)
+    public ReferenceCommandService(
+        RepairServiceDbContext db, 
+        IEntityValidationService entityValidationService)
     {
         _db = db;
+        _entityValidationService = entityValidationService;
+        
     }
 
     public async Task CreateServiceAsync(ServiceFormRequest request)
@@ -65,7 +71,7 @@ public class ReferenceCommandService : IReferenceCommandService
 
     public async Task UpdatePartAsync(int id, PartFormRequest request)
     {
-        var part = await CheckPartExistsAsync(id);
+        var part = await GetPartOrThrowAsync(id);
 
         part.PartNumber = request.PartNumber;
         part.PartName = request.PartName;
@@ -77,7 +83,7 @@ public class ReferenceCommandService : IReferenceCommandService
         await _db.SaveChangesAsync();
     }
 
-    private async Task<Part> CheckPartExistsAsync(int id)
+    private async Task<Part> GetPartOrThrowAsync(int id)
     {
         var part = await _db.Parts.FindAsync(id);
 
@@ -86,8 +92,8 @@ public class ReferenceCommandService : IReferenceCommandService
 
     public async Task<int> CreateTechnicianAsync(TechnicianFormRequest request)
     {
-        await  CheckTechnicianEmailExistsAsync(request.Email);
-        await  CheckTechnicianPhoneExistsAsync(request.Phone);
+        await  EnsureTechnicianEmailExistsAsync(request.Email);
+        await  EnsureTechnicianPhoneExistsAsync(request.Phone);
 
         var technician = new Technician
         {
@@ -106,7 +112,7 @@ public class ReferenceCommandService : IReferenceCommandService
         return technician.TechnicianId;
     }
 
-    private async Task CheckTechnicianEmailExistsAsync(string email, int exceptId = 0)
+    private async Task EnsureTechnicianEmailExistsAsync(string email, int exceptId = 0)
     {
         var emailExists = await _db.Technicians
             .AnyAsync(t => t.Email == email && t.TechnicianId != exceptId);
@@ -115,7 +121,7 @@ public class ReferenceCommandService : IReferenceCommandService
             throw new InvalidOperationException("Мастер с таким email уже существует.");
     }
 
-    private async Task CheckTechnicianPhoneExistsAsync(string phone, int exceptId = 0)
+    private async Task EnsureTechnicianPhoneExistsAsync(string phone, int exceptId = 0)
     {
         var phoneExists = await _db.Technicians
             .AnyAsync(t => t.Phone == phone && t.TechnicianId != exceptId);
@@ -126,10 +132,10 @@ public class ReferenceCommandService : IReferenceCommandService
 
     public async Task UpdateTechnicianAsync(int id, TechnicianFormRequest request)
     {
-        var technician = await CheckTechnicianExistsAsync(id);
+        var technician = await _entityValidationService.GetTechnicianOrThrowAsync(id);
 
-        await CheckTechnicianEmailExistsAsync(request.Email, id);
-        await CheckTechnicianPhoneExistsAsync(request.Phone, id);
+        await EnsureTechnicianEmailExistsAsync(request.Email, id);
+        await EnsureTechnicianPhoneExistsAsync(request.Phone, id);
 
         technician.FirstName = request.FirstName;
         technician.LastName = request.LastName;
@@ -140,12 +146,5 @@ public class ReferenceCommandService : IReferenceCommandService
         technician.Notes = request.Notes;
 
         await _db.SaveChangesAsync();
-    }
-
-    private async Task<Technician> CheckTechnicianExistsAsync(int id)
-    {
-        var technician = await _db.Technicians.FindAsync(id);
-
-        return technician ?? throw new InvalidOperationException("Мастер не найден.");
     }
 }

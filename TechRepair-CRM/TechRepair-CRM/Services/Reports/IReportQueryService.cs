@@ -5,15 +5,15 @@ namespace TechRepair_CRM.Services.Reports;
 
 public interface IReportQueryService
 {
-    Task<List<OrderListItemResponse>> GetActiveOrdersAsync();
+    Task<IReadOnlyList<OrderListItemResponse>> GetActiveOrdersAsync();
 
-    Task<List<OrderListItemResponse>> GetUnpaidOrdersAsync();
+    Task<IReadOnlyList<OrderListItemResponse>> GetUnpaidOrdersAsync();
 
-    Task<List<TechnicianWorkloadReportItem>> GetTechnicianWorkloadAsync();
+    Task<IReadOnlyList<TechnicianWorkloadReportItem>> GetTechnicianWorkloadAsync();
 
-    Task<List<ServiceStatisticsReportItem>> GetServiceStatisticsAsync();
+    Task<IReadOnlyList<ServiceStatisticsReportItem>> GetServiceStatisticsAsync();
 
-    Task<List<PartUsageStatisticsReportItem>> GetPartUsageStatisticsAsync();
+    Task<IReadOnlyList<PartUsageStatisticsReportItem>> GetPartUsageStatisticsAsync();
 
-    Task<List<RepairDurationReportItem>> GetRepairDurationAsync();
+    Task<IReadOnlyList<RepairDurationReportItem>> GetRepairDurationAsync();
 }

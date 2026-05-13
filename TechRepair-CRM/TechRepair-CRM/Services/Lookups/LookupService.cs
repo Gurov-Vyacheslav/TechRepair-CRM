@@ -108,4 +108,19 @@ public class LookupService : ILookupService
             })
             .ToListAsync();
     }
+    
+    public async Task<IReadOnlyList<SelectListItem>> GetAvailableServicesForOrderAsync(int orderId)
+    {
+        return await _db.Services
+            .Where(s => s.IsActive 
+                        && !_db.OrderServices
+                            .Any(os => os.OrderId == orderId && os.ServiceId == s.ServiceId))
+            .OrderBy(s => s.ServiceName)
+            .Select(s => new SelectListItem
+            {
+                Value = s.ServiceId.ToString(),
+                Text = s.ServiceName + " — " + s.BasePrice + " ₽"
+            })
+            .ToListAsync();
+    }
 }

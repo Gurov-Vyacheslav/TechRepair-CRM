@@ -15,7 +15,7 @@ public class UnpaidOrdersModel : PageModel
         _reportQueryService = reportQueryService;
     }
 
-    public List<OrderListItemResponse> Orders { get; private set; } = [];
+    public IReadOnlyList<OrderListItemResponse> Orders { get; private set; } = [];
 
     public async Task OnGetAsync()
     {

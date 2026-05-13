@@ -4,6 +4,7 @@ using TechRepair_CRM.DTOs.Clients;
 using TechRepair_CRM.DTOs.Devices;
 using TechRepair_CRM.DTOs.Orders;
 using TechRepair_CRM.Models.Db;
+using TechRepair_CRM.Services.Orders;
 
 namespace TechRepair_CRM.Services.Clients;
 
@@ -157,23 +158,9 @@ public class ClientQueryService : IClientQueryService
 
     private async Task<IReadOnlyList<OrderListItemResponse>> GetOrdersAsync(int clientId)
     {
-        return await _db.VwOrderFullInfos
-            .Where(o => o.ClientId == clientId)
-            .OrderByDescending(o => o.CreatedAt)
-            .Select(o => new OrderListItemResponse(
-                o.OrderId.Value,
-                o.OrderNumber,
-                o.CreatedAt.Value,
-                o.OrderStatus,
-                o.ClientFirstName + " " + o.ClientLastName,
-                o.ClientPhone,
-                o.DeviceType,
-                o.Brand,
-                o.Model,
-                o.TotalCost.Value,
-                o.PaidAmount.Value,
-                o.RemainingAmount.Value
-            ))
-            .ToListAsync();
+        var orders = _db.VwOrderFullInfos
+            .Where(o => o.ClientId == clientId);
+        
+        return await OrderListProjection.GetOrdersListItems(orders);
     }
 }

@@ -15,7 +15,7 @@ public class PartUsageStatisticsModel : PageModel
         _reportQueryService = reportQueryService;
     }
 
-    public List<PartUsageStatisticsReportItem> Items { get; private set; } = [];
+    public IReadOnlyList<PartUsageStatisticsReportItem> Items { get; private set; } = [];
 
     public async Task OnGetAsync()
     {

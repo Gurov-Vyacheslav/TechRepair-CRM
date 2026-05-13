@@ -10,23 +10,25 @@ public class UserAdminService : IUserAdminService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IUserValidationService _userValidationService;
     private readonly RepairServiceDbContext _db;
 
     public UserAdminService(
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager,
+        IUserValidationService userValidationService,
         RepairServiceDbContext db)
     {
         _userManager = userManager;
         _roleManager = roleManager;
+        _userValidationService = userValidationService;
         _db = db;
     }
 
    public async Task<IReadOnlyList<UserListItemResponse>> GetUsersAsync(UserFilterRequest? filter = null)
     {
         var usersQuery = GetFilteredUsers(filter);
-
-        // Получаем данные пользователей, которые точно понадобятся
+        
         var usersData = await usersQuery
             .OrderBy(u => u.Email)
             .Select(u => new
@@ -42,23 +44,19 @@ public class UserAdminService : IUserAdminService
         if (!usersData.Any()) return new List<UserListItemResponse>();
 
         var userIds = usersData.Select(u => u.Id).ToList();
-
-        // 2. Загружаем роли для всех этих пользователей 
+        
         var rolesDictionary = await GetUsersRoles(userIds);
-
-        // 3. Загружаем мастеров для всех пользователей
+        
         var technicianIds = usersData.Where(u => u.TechnicianId.HasValue)
                                      .Select(u => u.TechnicianId.Value)
                                      .Distinct()
                                      .ToList();
         
         var technicians = await GetTechnicianFullNames(technicianIds);
-
-        // 4. Формируем финальный результат
+        
         var result = new List<UserListItemResponse>();
         foreach (var user in usersData)
         {
-            // Проверка фильтра по роли (в памяти)
             var userRoles = rolesDictionary.GetValueOrDefault(user.Id) ?? new List<string>();
             var userRole = userRoles.FirstOrDefault();
             if (filter?.Role != null && userRole != filter.Role) continue;
@@ -161,20 +159,15 @@ public class UserAdminService : IUserAdminService
 
     public async Task CreateUserAsync(UserCreateRequest request)
     {
-        await EnsureRoleExistsAsync(request.Role);
+        await _userValidationService.EnsureRoleExistsAsync(request.Role);
         await EnsureTechnicianIsValidAsync(request.TechnicianId);
+        await EnsureTechnicianNotAssignedAsync(request.TechnicianId);
 
         var email = await ResolveUserEmailAsync(
             request.TechnicianId,
             request.Email);
 
-        var existingUser = await _userManager.FindByEmailAsync(email);
-
-        if (existingUser is not null)
-            throw new InvalidOperationException("Пользователь с таким email уже существует.");
-        
-        if (request.Role == "Technician" && request.TechnicianId is null)
-            throw new InvalidOperationException("Для роли Technician нужно выбрать мастера.");
+        await ValidateUserAsync(email, request.Role, request.TechnicianId);
 
         var user = new ApplicationUser
         {
@@ -190,6 +183,27 @@ public class UserAdminService : IUserAdminService
 
         var roleResult = await _userManager.AddToRoleAsync(user, request.Role);
         ThrowIfFailed(roleResult);
+    }
+    
+    private async Task EnsureTechnicianNotAssignedAsync(int? technicianId)
+    {
+        if (technicianId is null) return;
+
+        var technicianAlreadyLinked = await _userManager.Users
+            .AnyAsync(u => u.TechnicianId == technicianId.Value);
+
+        if (technicianAlreadyLinked)
+            throw new InvalidOperationException("Для выбранного мастера уже существует пользователь.");
+    }
+    
+    private async Task ValidateUserAsync(string email, string role, int? technicianId, string? currentUserId = null)
+    {
+        var existingUser = await _userManager.FindByEmailAsync(email);
+        if (existingUser is not null && (currentUserId is null || existingUser.Id != currentUserId))
+            throw new InvalidOperationException("Пользователь с таким email уже существует.");
+
+        if (role == "Technician" && technicianId is null)
+            throw new InvalidOperationException("Для роли Technician нужно выбрать мастера.");
     }
     
     private async Task<string> ResolveUserEmailAsync(int? technicianId, string requestEmail)
@@ -209,22 +223,16 @@ public class UserAdminService : IUserAdminService
     }
     public async Task UpdateUserAsync(string id, UserEditRequest request)
     {
-        var user = await CheckUserExist(id);
+        var user = await _userValidationService.GetUserOrThrowAsync(id);
 
-        await EnsureRoleExistsAsync(request.Role);
+        await _userValidationService.EnsureRoleExistsAsync(request.Role);
         await EnsureTechnicianIsValidAsync(request.TechnicianId);
 
         var email = await ResolveUserEmailAsync(
             request.TechnicianId,
             request.Email);
 
-        var existingUser = await _userManager.FindByEmailAsync(email);
-
-        if (existingUser is not null && existingUser.Id != user.Id)
-            throw new InvalidOperationException("Пользователь с таким email уже существует.");
-        
-        if (request.Role == "Technician" && request.TechnicianId is null)
-            throw new InvalidOperationException("Для роли Technician нужно выбрать мастера.");
+        await ValidateUserAsync(email, request.Role, request.TechnicianId, user.Id);
 
         user.Email = email;
         user.UserName = email;
@@ -262,13 +270,6 @@ public class UserAdminService : IUserAdminService
         }
     }
 
-    private async Task<ApplicationUser> CheckUserExist(string id)
-    {
-        var user = await _userManager.FindByIdAsync(id);
-
-        return user ?? throw new InvalidOperationException("Пользователь не найден.");
-    }
-
     public async Task<IReadOnlyList<string>> GetRolesAsync()
     {
         return await _roleManager.Roles
@@ -277,11 +278,6 @@ public class UserAdminService : IUserAdminService
             .ToListAsync();
     }
 
-    private async Task EnsureRoleExistsAsync(string role)
-    {
-        if (!await _roleManager.RoleExistsAsync(role))
-            throw new InvalidOperationException("Указанная роль не найдена.");
-    }
 
     private async Task EnsureTechnicianIsValidAsync(int? technicianId)
     {
@@ -323,6 +319,43 @@ public class UserAdminService : IUserAdminService
                 t.LastName + " " + t.FirstName,
                 t.Email
             ))
+            .ToListAsync();
+    }
+    
+    public async Task<IReadOnlyList<TechnicianUserOptionResponse>> GetAvailableTechnicianOptionsForCreateAsync()
+    {
+        var usedTechnicianIds = await GetUsedTechnicianIdsAsync();
+
+        var usedEmails = await GetUsedUserEmailsAsync();
+
+        return await _db.Technicians
+            .Where(t =>
+                t.IsActive &&
+                !usedTechnicianIds.Contains(t.TechnicianId) &&
+                !usedEmails.Contains(t.Email.ToLower()))
+            .OrderBy(t => t.LastName)
+            .ThenBy(t => t.FirstName)
+            .Select(t => new TechnicianUserOptionResponse(
+                t.TechnicianId,
+                t.LastName + " " + t.FirstName,
+                t.Email
+            ))
+            .ToListAsync();
+    }
+
+    private async Task<IReadOnlyList<int>> GetUsedTechnicianIdsAsync()
+    {
+       return await _userManager.Users
+           .Where(u => u.TechnicianId != null)
+           .Select(u => u.TechnicianId!.Value)
+           .ToListAsync();
+    }
+
+    private async Task<IReadOnlyList<string>> GetUsedUserEmailsAsync()
+    {
+        return await _userManager.Users
+            .Where(u => u.Email != null)
+            .Select(u => u.Email!.ToLower())
             .ToListAsync();
     }
 }

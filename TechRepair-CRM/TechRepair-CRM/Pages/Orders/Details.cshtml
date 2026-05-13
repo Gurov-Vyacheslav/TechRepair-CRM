@@ -245,17 +245,29 @@ else
                 <td>@service.TotalPrice</td>
                 <td>@(service.CompletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
                 <td>
-                    @if (service.CompletedAt is null && Model.Order.OrderStatus == "InRepair")
+                    @{
+                        var canCompleteService =
+                            service.CompletedAt is null &&
+                            Model.Order.OrderStatus == "InRepair" &&
+                            (
+                                canManageOrder ||
+                                service.TechnicianId == Model.CurrentTechnicianId
+                            );
+                    }
+
+                    @if (canCompleteService)
                     {
                         <form method="post"
                               asp-page-handler="CompleteService"
                               asp-route-id="@Model.Order.OrderId"
-                              asp-route-serviceId="@service.ServiceId">
+                              asp-route-serviceId="@service.ServiceId"
+                              style="display:inline">
                             <button type="submit" class="btn btn-small btn-primary">
                                 Завершить
                             </button>
                         </form>
                     }
+                    
                     @if (canManageOrder &&
                          Model.Order.OrderStatus is not "Closed" and not "Canceled" &&
                          service.CompletedAt is null)
