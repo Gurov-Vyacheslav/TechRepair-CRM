@@ -13,14 +13,6 @@ public partial class RepairOrder
 
     public short StatusId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-
-    public DateTime? AcceptedAt { get; set; }
-
-    public DateTime? CompletedAt { get; set; }
-
-    public DateTime? IssuedAt { get; set; }
-
     public short? WarrantyMonths { get; set; }
 
     public string ProblemDescription { get; set; } = null!;
@@ -36,8 +28,6 @@ public partial class RepairOrder
     public string? Notes { get; set; }
 
     public virtual Device Device { get; set; } = null!;
-
-    public virtual ICollection<OrderPart> OrderParts { get; set; } = new List<OrderPart>();
 
     public virtual ICollection<OrderService> OrderServices { get; set; } = new List<OrderService>();
 

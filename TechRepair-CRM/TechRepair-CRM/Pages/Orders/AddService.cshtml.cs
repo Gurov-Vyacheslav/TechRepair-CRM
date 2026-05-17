@@ -47,7 +47,7 @@ public class AddServiceModel : PageModel
         try
         {
             await _orderCommandService.AddServiceToOrderAsync(orderId, Input);
-            return RedirectToPage("/Orders/AddPart", new { orderId });
+            return RedirectToPage("/Orders/AddServicePart", new { orderId, serviceId = Input.ServiceId });
         }
         catch (Exception ex)
         {

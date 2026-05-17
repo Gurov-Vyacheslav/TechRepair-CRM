@@ -117,8 +117,9 @@ public class ClientQueryService : IClientQueryService
 
     private async Task<IReadOnlyList<ClientDeviceResponse>> GetDevicesAsync(int clientId)
     {
-        var devices = await _db.Devices
+        var deviceRows = await _db.Devices
             .Where(d => d.ClientId == clientId)
+            .OrderBy(d => d.DeviceId)
             .Select(d => new
             {
                 d.DeviceId,
@@ -129,32 +130,51 @@ public class ClientQueryService : IClientQueryService
                 d.PurchaseDate,
                 d.EquipmentDescription,
                 d.ExternalCondition,
-                d.Notes,
-       
-                LatestOrder = d.RepairOrders
-                    .OrderByDescending(o => o.CreatedAt)
-                    .Select(o => new { o.OrderId, o.OrderNumber })
-                    .FirstOrDefault()
+                d.Notes
             })
-            .OrderBy(x => x.DeviceId)
             .ToListAsync();
 
-        return devices
-            .Select(d => new ClientDeviceResponse(
-                d.DeviceId,
-                d.DeviceType,
-                d.Brand,
-                d.Model,
-                d.SerialNumber,
-                d.PurchaseDate,
-                d.EquipmentDescription,
-                d.ExternalCondition,
-                d.Notes,
-                d.LatestOrder?.OrderId,
-                d.LatestOrder?.OrderNumber
-            ))
+        var deviceIds = deviceRows
+            .Select(d => d.DeviceId)
+            .ToList();
+
+        var latestOrders = await _db.VwOrderFullInfos
+            .Where(o => o.DeviceId.HasValue && deviceIds.Contains(o.DeviceId.Value))
+            .OrderByDescending(o => o.CreatedAt)
+            .Select(o => new
+            {
+                DeviceId = o.DeviceId!.Value,
+                OrderId = o.OrderId!.Value,
+                OrderNumber = o.OrderNumber!
+            })
+            .ToListAsync();
+
+        var latestOrderByDevice = latestOrders
+            .GroupBy(o => o.DeviceId)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        return deviceRows
+            .Select(d =>
+            {
+                latestOrderByDevice.TryGetValue(d.DeviceId, out var latestOrder);
+
+                return new ClientDeviceResponse(
+                    d.DeviceId,
+                    d.DeviceType,
+                    d.Brand,
+                    d.Model,
+                    d.SerialNumber,
+                    d.PurchaseDate,
+                    d.EquipmentDescription,
+                    d.ExternalCondition,
+                    d.Notes,
+                    latestOrder?.OrderId,
+                    latestOrder?.OrderNumber
+                );
+            })
             .ToList();
     }
+
 
     private async Task<IReadOnlyList<OrderListItemResponse>> GetOrdersAsync(int clientId)
     {

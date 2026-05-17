@@ -24,6 +24,8 @@ public class ReferenceCommandService : IReferenceCommandService
 
     public async Task CreateServiceAsync(ServiceFormRequest request)
     {
+        await EnsureServiceNameIsUniqueAsync(request.ServiceName);
+
         var service = new Service
         {
             ServiceName = request.ServiceName,
@@ -36,13 +38,23 @@ public class ReferenceCommandService : IReferenceCommandService
         _db.Services.Add(service);
         await _db.SaveChangesAsync();
     }
+    
+    private async Task EnsureServiceNameIsUniqueAsync(string serviceName, int exceptId = 0)
+    {
+        var exists = await _db.Services
+            .AnyAsync(s =>
+                s.ServiceName == serviceName &&
+                s.ServiceId != exceptId);
+
+        if (exists)
+            throw new InvalidOperationException("Услуга с таким названием уже существует.");
+    }
 
     public async Task UpdateServiceAsync(int id, ServiceFormRequest request)
     {
-        var service = await _db.Services.FindAsync(id);
+        var service = await _entityValidationService.GetServiceOrThrowAsync(id);
 
-        if (service is null)
-            throw new InvalidOperationException("Услуга не найдена.");
+        await EnsureServiceNameIsUniqueAsync(request.ServiceName, id);
 
         service.ServiceName = request.ServiceName;
         service.Description = request.Description;
@@ -53,8 +65,11 @@ public class ReferenceCommandService : IReferenceCommandService
         await _db.SaveChangesAsync();
     }
 
+
     public async Task CreatePartAsync(PartFormRequest request)
     {
+        await EnsurePartNumberIsUniqueAsync(request.PartNumber);
+
         var part = new Part
         {
             PartNumber = request.PartNumber,
@@ -68,10 +83,29 @@ public class ReferenceCommandService : IReferenceCommandService
         _db.Parts.Add(part);
         await _db.SaveChangesAsync();
     }
+    
+    private async Task EnsurePartNumberIsUniqueAsync(string? partNumber, int exceptId = 0)
+    {
+        if (string.IsNullOrWhiteSpace(partNumber))
+            return;
+
+        var normalizedPartNumber = partNumber.Trim();
+
+        var exists = await _db.Parts
+            .AnyAsync(p =>
+                p.PartNumber == normalizedPartNumber &&
+                p.PartId != exceptId);
+
+        if (exists)
+            throw new InvalidOperationException("Деталь с таким артикулом уже существует.");
+    }
+    
 
     public async Task UpdatePartAsync(int id, PartFormRequest request)
     {
-        var part = await GetPartOrThrowAsync(id);
+        var part = await _entityValidationService.GetPartOrThrowAsync(id);
+
+        await EnsurePartNumberIsUniqueAsync(request.PartNumber, id);
 
         part.PartNumber = request.PartNumber;
         part.PartName = request.PartName;
@@ -82,18 +116,11 @@ public class ReferenceCommandService : IReferenceCommandService
 
         await _db.SaveChangesAsync();
     }
-
-    private async Task<Part> GetPartOrThrowAsync(int id)
-    {
-        var part = await _db.Parts.FindAsync(id);
-
-        return part ?? throw new InvalidOperationException("Деталь не найдена.");
-    }
-
+    
     public async Task<int> CreateTechnicianAsync(TechnicianFormRequest request)
     {
-        await  EnsureTechnicianEmailExistsAsync(request.Email);
-        await  EnsureTechnicianPhoneExistsAsync(request.Phone);
+        await EnsureTechnicianEmailIsUniqueAsync(request.Email);
+        await EnsureTechnicianPhoneIsUniqueAsync(request.Phone);
 
         var technician = new Technician
         {
@@ -112,7 +139,7 @@ public class ReferenceCommandService : IReferenceCommandService
         return technician.TechnicianId;
     }
 
-    private async Task EnsureTechnicianEmailExistsAsync(string email, int exceptId = 0)
+    private async Task EnsureTechnicianEmailIsUniqueAsync(string email, int exceptId = 0)
     {
         var emailExists = await _db.Technicians
             .AnyAsync(t => t.Email == email && t.TechnicianId != exceptId);
@@ -121,7 +148,7 @@ public class ReferenceCommandService : IReferenceCommandService
             throw new InvalidOperationException("Мастер с таким email уже существует.");
     }
 
-    private async Task EnsureTechnicianPhoneExistsAsync(string phone, int exceptId = 0)
+    private async Task EnsureTechnicianPhoneIsUniqueAsync(string phone, int exceptId = 0)
     {
         var phoneExists = await _db.Technicians
             .AnyAsync(t => t.Phone == phone && t.TechnicianId != exceptId);
@@ -134,8 +161,8 @@ public class ReferenceCommandService : IReferenceCommandService
     {
         var technician = await _entityValidationService.GetTechnicianOrThrowAsync(id);
 
-        await EnsureTechnicianEmailExistsAsync(request.Email, id);
-        await EnsureTechnicianPhoneExistsAsync(request.Phone, id);
+        await EnsureTechnicianEmailIsUniqueAsync(request.Email, id);
+        await EnsureTechnicianPhoneIsUniqueAsync(request.Phone, id);
 
         technician.FirstName = request.FirstName;
         technician.LastName = request.LastName;

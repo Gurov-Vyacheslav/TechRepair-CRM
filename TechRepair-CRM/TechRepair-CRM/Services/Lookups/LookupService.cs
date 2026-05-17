@@ -104,7 +104,7 @@ public class LookupService : ILookupService
             .Select(p => new SelectListItem
             {
                 Value = p.PartId.ToString(),
-                Text = p.PartName + " — " + (p.DefaultPrice ?? 0) + " ₽"
+                Text = p.PartName + " — " + p.DefaultPrice + " ₽"
             })
             .ToListAsync();
     }

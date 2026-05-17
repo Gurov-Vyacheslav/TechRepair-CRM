@@ -13,9 +13,15 @@ public partial class VwOrderFullInfo
 
     public DateTime? AcceptedAt { get; set; }
 
+    public DateTime? RepairStartedAt { get; set; }
+
     public DateTime? CompletedAt { get; set; }
 
     public DateTime? IssuedAt { get; set; }
+
+    public DateTime? CanceledAt { get; set; }
+
+    public DateTime? LastStatusChangedAt { get; set; }
 
     public string? ProblemDescription { get; set; }
 
@@ -66,6 +72,8 @@ public partial class VwOrderFullInfo
     public decimal? PaidAmount { get; set; }
 
     public decimal? RemainingAmount { get; set; }
+
+    public decimal? RequiredToCloseAmount { get; set; }
 
     public long? PaymentsCount { get; set; }
 }

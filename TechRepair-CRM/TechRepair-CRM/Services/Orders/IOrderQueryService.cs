@@ -1,6 +1,6 @@
 ﻿using TechRepair_CRM.DTOs.Orders;
-using TechRepair_CRM.DTOs.Orders.Parts;
 using TechRepair_CRM.DTOs.Orders.Services;
+using TechRepair_CRM.DTOs.Orders.Services.Parts;
 
 namespace TechRepair_CRM.Services.Orders;
 
@@ -12,5 +12,5 @@ public interface IOrderQueryService
     
     Task<EditOrderServiceRequest?> GetOrderServiceEditFormAsync(int orderId, int serviceId);
 
-    Task<EditOrderPartRequest?> GetOrderPartEditFormAsync(int orderId, int partId);
+    Task<EditOrderServicePartRequest?> GetOrderServicePartEditFormAsync(int orderId, int serviceId, int partId);
 }

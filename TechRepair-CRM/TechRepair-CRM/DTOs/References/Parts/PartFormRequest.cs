@@ -16,7 +16,7 @@ public record PartFormRequest
 
     [Range(0, double.MaxValue)]
     [Display(Name = "Текущая цена")]
-    public decimal? DefaultPrice { get; set; }
+    public decimal DefaultPrice { get; set; }
 
     [Display(Name = "Активна")]
     public bool IsActive { get; set; } = true;

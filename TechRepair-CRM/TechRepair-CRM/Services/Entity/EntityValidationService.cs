@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using TechRepair_CRM.Auth;
+﻿using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Data;
 using TechRepair_CRM.Models.Db;
 
@@ -31,6 +29,11 @@ public class EntityValidationService:IEntityValidationService
         var client = await _db.Clients.FindAsync(clientId);
         return client ?? throw new InvalidOperationException("Клиент не найден.");
     }
+
+    public async Task EnsureClientExistsAsync(int clientId)
+    {
+        await GetClientOrThrowAsync(clientId);
+    }
     
     public async Task<Device> GetDeviceOrThrowAsync(int deviceId)
     {
@@ -50,28 +53,36 @@ public class EntityValidationService:IEntityValidationService
 
         return order ?? throw new InvalidOperationException("Заказ не найден.");
     }
+
+    public async Task EnsureOrderExistsAsync(int orderId)
+    {
+        await GetOrderOrThrowAsync(orderId);
+    }
     
-    public async Task<Service> GetActiveServiceOrThrowAsync(int serviceId)
+    public async Task<Service> GetServiceOrThrowAsync(int serviceId, bool isActive = false)
     {
         var service = await _db.Services
-            .FirstOrDefaultAsync(s => s.ServiceId == serviceId && s.IsActive);
+            .FirstOrDefaultAsync(s => s.ServiceId == serviceId);
 
         if (service is null)
-            throw new InvalidOperationException("Активная услуга не найдена.");
-
+            throw new InvalidOperationException("Услуга не найдена.");
+        
+        if (isActive && !service.IsActive)
+            throw new InvalidOperationException("Услуга не доступна.");
+        
         return service;
     }
     
-    public async Task<Part> GetActivePartOrThrowAsync(int partId)
+    public async Task<Part> GetPartOrThrowAsync(int partId, bool isActive = false)
     {
         var part = await _db.Parts
-            .FirstOrDefaultAsync(p => p.PartId == partId && p.IsActive);
-
+            .FirstOrDefaultAsync(p => p.PartId == partId);
+        
         if (part is null)
-            throw new InvalidOperationException("Активная деталь не найдена.");
-
-        if (part.DefaultPrice is null)
-            throw new InvalidOperationException("У детали не указана текущая цена.");
+            throw new InvalidOperationException("Деталь не найдена.");
+        
+        if (isActive && !part.IsActive)
+            throw new InvalidOperationException("Деталь не доступна.");
 
         return part;
     }
@@ -101,31 +112,33 @@ public class EntityValidationService:IEntityValidationService
             throw new InvalidOperationException("Эта услуга уже добавлена к заказу.");
     }
     
-    public async Task<OrderPart> GetOrderPartOrThrowAsync(int orderId, int partId)
+    public async Task<OrderServicePart> GetOrderServicePartOrThrowAsync(int orderId, int serviceId, int partId)
     {
-        var orderPart = await _db.OrderParts
-            .FirstOrDefaultAsync(op => op.OrderId == orderId && op.PartId == partId);
-
-        if (orderPart is null)
-            throw new InvalidOperationException("Деталь в заказе не найдена.");
-
-        return orderPart;
+        var orderPart = await _db.OrderServiceParts
+            .FirstOrDefaultAsync(osp =>
+                osp.OrderId == orderId &&
+                osp.ServiceId == serviceId &&
+                osp.PartId == partId);
+        
+        return orderPart ?? throw new InvalidOperationException("Деталь в заказе не найдена.");
     }
     
     public async Task<Technician> GetTechnicianOrThrowAsync(int id, bool isActive = false)
     {
         var technician = await _db.Technicians.FindAsync(id);
 
-        return technician ?? throw new InvalidOperationException("Мастер не найден.");
+        if (technician is null)
+            throw new InvalidOperationException("Мастер не найден.");
+        
+        if (isActive && !technician.IsActive) 
+            throw new InvalidOperationException("Мастер не доступен.");
+        
+        return technician;
     }
     
     public async Task EnsureActiveTechnicianExistsAsync(int technicianId)
     {
-        var technicianExists = await _db.Technicians
-            .AnyAsync(t => t.TechnicianId == technicianId && t.IsActive);
-
-        if (!technicianExists)
-            throw new InvalidOperationException("Активный мастер не найден.");
+        await GetTechnicianOrThrowAsync(technicianId, true);
     }
 
 }

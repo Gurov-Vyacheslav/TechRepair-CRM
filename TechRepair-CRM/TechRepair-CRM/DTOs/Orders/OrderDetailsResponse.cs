@@ -1,5 +1,4 @@
-﻿using TechRepair_CRM.DTOs.Orders.Parts;
-using TechRepair_CRM.DTOs.Orders.Payments;
+﻿using TechRepair_CRM.DTOs.Orders.Payments;
 using TechRepair_CRM.DTOs.Orders.Services;
 using TechRepair_CRM.DTOs.Orders.StatusHistory;
 
@@ -42,8 +41,7 @@ public record OrderDetailsResponse(
     decimal PaidAmount,
     decimal RemainingAmount,
 
-    List<OrderServiceResponse> Services,
-    List<OrderPartResponse> Parts,
-    List<PaymentResponse> Payments,
-    List<OrderStatusHistoryResponse> StatusHistory
+    IReadOnlyList<OrderServiceResponse> Services,
+    IReadOnlyList<PaymentResponse> Payments,
+    IReadOnlyList<OrderStatusHistoryResponse> StatusHistory
 );

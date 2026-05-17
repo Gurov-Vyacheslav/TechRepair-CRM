@@ -1,11 +1,11 @@
-﻿@page "{orderId:int}"
-@model TechRepair_CRM.Pages.Orders.AddPartModel
+﻿@page "{orderId:int}/{serviceId:int}"
+@model TechRepair_CRM.Pages.Orders.AddServicePartModel
 
 @{
-    ViewData["Title"] = "Добавить деталь";
+    ViewData["Title"] = "Добавить деталь к услуге";
 }
 
-<h1>Добавить деталь</h1>
+<h1>Добавить деталь к услуге</h1>
 
 @if (TempData["Success"] is not null)
 {

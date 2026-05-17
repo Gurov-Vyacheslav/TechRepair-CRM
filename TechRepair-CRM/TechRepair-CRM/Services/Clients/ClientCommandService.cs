@@ -73,7 +73,7 @@ public class ClientCommandService : IClientCommandService
 
     public async Task<int> AddDeviceToClientAsync(int clientId, AddDeviceRequest request)
     {
-        await _entityValidationService.GetClientOrThrowAsync(clientId);
+        await _entityValidationService.EnsureClientExistsAsync(clientId);
 
         await _entityValidationService.EnsureDeviceTypeExistsAsync(request.DeviceTypeId);
         

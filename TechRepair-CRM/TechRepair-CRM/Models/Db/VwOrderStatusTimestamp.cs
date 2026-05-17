@@ -3,11 +3,9 @@ using System.Collections.Generic;
 
 namespace TechRepair_CRM.Models.Db;
 
-public partial class VwRepairDuration
+public partial class VwOrderStatusTimestamp
 {
     public int? OrderId { get; set; }
-
-    public string? OrderNumber { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 
@@ -21,13 +19,5 @@ public partial class VwRepairDuration
 
     public DateTime? CanceledAt { get; set; }
 
-    public string? OrderStatus { get; set; }
-
-    public TimeSpan? RepairDurationInterval { get; set; }
-
-    public decimal? RepairDurationHours { get; set; }
-
-    public decimal? RepairDurationDays { get; set; }
-
-    public TimeSpan? OrderLifetimeInterval { get; set; }
+    public DateTime? LastStatusChangedAt { get; set; }
 }

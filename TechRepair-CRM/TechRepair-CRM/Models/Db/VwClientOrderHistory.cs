@@ -35,11 +35,15 @@ public partial class VwClientOrderHistory
 
     public DateTime? IssuedAt { get; set; }
 
+    public DateTime? CanceledAt { get; set; }
+
     public string? OrderStatus { get; set; }
 
     public string? ProblemDescription { get; set; }
 
     public decimal? TotalCost { get; set; }
+
+    public bool? IsWarrantyRepair { get; set; }
 
     public decimal? PaidAmount { get; set; }
 

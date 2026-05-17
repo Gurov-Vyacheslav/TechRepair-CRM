@@ -18,9 +18,9 @@ public partial class RepairServiceDbContext : DbContext
 
     public virtual DbSet<DeviceType> DeviceTypes { get; set; }
 
-    public virtual DbSet<OrderPart> OrderParts { get; set; }
-
     public virtual DbSet<OrderService> OrderServices { get; set; }
+
+    public virtual DbSet<OrderServicePart> OrderServiceParts { get; set; }
 
     public virtual DbSet<OrderStatus> OrderStatuses { get; set; }
 
@@ -43,6 +43,10 @@ public partial class RepairServiceDbContext : DbContext
     public virtual DbSet<VwOrderFullInfo> VwOrderFullInfos { get; set; }
 
     public virtual DbSet<VwOrderPayment> VwOrderPayments { get; set; }
+
+    public virtual DbSet<VwOrderServicePartDetail> VwOrderServicePartDetails { get; set; }
+
+    public virtual DbSet<VwOrderStatusTimestamp> VwOrderStatusTimestamps { get; set; }
 
     public virtual DbSet<VwPartUsageStatistic> VwPartUsageStatistics { get; set; }
 
@@ -137,31 +141,6 @@ public partial class RepairServiceDbContext : DbContext
                 .HasColumnName("type_name");
         });
 
-        modelBuilder.Entity<OrderPart>(entity =>
-        {
-            entity.HasKey(e => new { e.OrderId, e.PartId }).HasName("order_part_pkey");
-
-            entity.ToTable("order_part");
-
-            entity.HasIndex(e => e.PartId, "idx_order_part_part_id");
-
-            entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.PartId).HasColumnName("part_id");
-            entity.Property(e => e.PriceAtMoment)
-                .HasPrecision(10, 2)
-                .HasColumnName("price_at_moment");
-            entity.Property(e => e.Quantity).HasColumnName("quantity");
-
-            entity.HasOne(d => d.Order).WithMany(p => p.OrderParts)
-                .HasForeignKey(d => d.OrderId)
-                .HasConstraintName("fk_order_part_order");
-
-            entity.HasOne(d => d.Part).WithMany(p => p.OrderParts)
-                .HasForeignKey(d => d.PartId)
-                .OnDelete(DeleteBehavior.Restrict)
-                .HasConstraintName("fk_order_part_part");
-        });
-
         modelBuilder.Entity<OrderService>(entity =>
         {
             entity.HasKey(e => new { e.OrderId, e.ServiceId }).HasName("order_service_pkey");
@@ -203,6 +182,34 @@ public partial class RepairServiceDbContext : DbContext
                 .HasConstraintName("fk_order_service_technician");
         });
 
+        modelBuilder.Entity<OrderServicePart>(entity =>
+        {
+            entity.HasKey(e => new { e.OrderId, e.ServiceId, e.PartId }).HasName("order_service_part_pkey");
+
+            entity.ToTable("order_service_part");
+
+            entity.HasIndex(e => new { e.OrderId, e.ServiceId }, "idx_order_service_part_order_service");
+
+            entity.HasIndex(e => e.PartId, "idx_order_service_part_part_id");
+
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.ServiceId).HasColumnName("service_id");
+            entity.Property(e => e.PartId).HasColumnName("part_id");
+            entity.Property(e => e.PriceAtMoment)
+                .HasPrecision(10, 2)
+                .HasColumnName("price_at_moment");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+
+            entity.HasOne(d => d.Part).WithMany(p => p.OrderServiceParts)
+                .HasForeignKey(d => d.PartId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .HasConstraintName("fk_order_service_part_part");
+
+            entity.HasOne(d => d.OrderService).WithMany(p => p.OrderServiceParts)
+                .HasForeignKey(d => new { d.OrderId, d.ServiceId })
+                .HasConstraintName("fk_order_service_part_order_service");
+        });
+
         modelBuilder.Entity<OrderStatus>(entity =>
         {
             entity.HasKey(e => e.StatusId).HasName("order_status_pkey");
@@ -223,6 +230,8 @@ public partial class RepairServiceDbContext : DbContext
 
             entity.ToTable("order_status_history");
 
+            entity.HasIndex(e => e.ChangedAt, "idx_order_status_history_changed_at");
+
             entity.HasIndex(e => new { e.OrderId, e.ChangedAt }, "idx_order_status_history_order_changed_at");
 
             entity.HasIndex(e => e.OrderId, "idx_order_status_history_order_id");
@@ -240,7 +249,6 @@ public partial class RepairServiceDbContext : DbContext
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderStatusHistories)
                 .HasForeignKey(d => d.OrderId)
-                .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("fk_order_status_history_order");
 
             entity.HasOne(d => d.Status).WithMany(p => p.OrderStatusHistories)
@@ -323,27 +331,13 @@ public partial class RepairServiceDbContext : DbContext
 
             entity.ToTable("repair_order");
 
-            entity.HasIndex(e => e.CreatedAt, "idx_repair_order_created_at");
-
             entity.HasIndex(e => e.DeviceId, "idx_repair_order_device_id");
-
-            entity.HasIndex(e => new { e.StatusId, e.CreatedAt }, "idx_repair_order_status_created_at");
 
             entity.HasIndex(e => e.StatusId, "idx_repair_order_status_id");
 
             entity.HasIndex(e => e.OrderNumber, "repair_order_order_number_key").IsUnique();
 
             entity.Property(e => e.OrderId).HasColumnName("order_id");
-            entity.Property(e => e.AcceptedAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("accepted_at");
-            entity.Property(e => e.CompletedAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("completed_at");
-            entity.Property(e => e.CreatedAt)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("created_at");
             entity.Property(e => e.DeviceId).HasColumnName("device_id");
             entity.Property(e => e.DiagnosticResult).HasColumnName("diagnostic_result");
             entity.Property(e => e.EstimatedCost)
@@ -352,9 +346,6 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.IsWarrantyRepair)
                 .HasDefaultValue(false)
                 .HasColumnName("is_warranty_repair");
-            entity.Property(e => e.IssuedAt)
-                .HasColumnType("timestamp without time zone")
-                .HasColumnName("issued_at");
             entity.Property(e => e.Notes).HasColumnName("notes");
             entity.Property(e => e.OrderNumber)
                 .HasMaxLength(30)
@@ -440,6 +431,9 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.Brand)
                 .HasMaxLength(50)
                 .HasColumnName("brand");
+            entity.Property(e => e.CanceledAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("canceled_at");
             entity.Property(e => e.ClientId).HasColumnName("client_id");
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp without time zone")
@@ -457,6 +451,7 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.FirstName)
                 .HasMaxLength(50)
                 .HasColumnName("first_name");
+            entity.Property(e => e.IsWarrantyRepair).HasColumnName("is_warranty_repair");
             entity.Property(e => e.IssuedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("issued_at");
@@ -533,6 +528,9 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.CalculatedTotal)
                 .HasPrecision(10, 2)
                 .HasColumnName("calculated_total");
+            entity.Property(e => e.CanceledAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("canceled_at");
             entity.Property(e => e.ClientEmail)
                 .HasMaxLength(254)
                 .HasColumnName("client_email");
@@ -566,6 +564,9 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.IssuedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("issued_at");
+            entity.Property(e => e.LastStatusChangedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("last_status_changed_at");
             entity.Property(e => e.Model)
                 .HasMaxLength(50)
                 .HasColumnName("model");
@@ -588,6 +589,12 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.RemainingAmount)
                 .HasPrecision(10, 2)
                 .HasColumnName("remaining_amount");
+            entity.Property(e => e.RepairStartedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("repair_started_at");
+            entity.Property(e => e.RequiredToCloseAmount)
+                .HasPrecision(10, 2)
+                .HasColumnName("required_to_close_amount");
             entity.Property(e => e.SerialNumber)
                 .HasMaxLength(100)
                 .HasColumnName("serial_number");
@@ -606,6 +613,7 @@ public partial class RepairServiceDbContext : DbContext
                 .HasNoKey()
                 .ToView("vw_order_payments");
 
+            entity.Property(e => e.IsWarrantyRepair).HasColumnName("is_warranty_repair");
             entity.Property(e => e.LastPaymentDate)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("last_payment_date");
@@ -620,9 +628,75 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.RemainingAmount)
                 .HasPrecision(10, 2)
                 .HasColumnName("remaining_amount");
+            entity.Property(e => e.RequiredToCloseAmount)
+                .HasPrecision(10, 2)
+                .HasColumnName("required_to_close_amount");
             entity.Property(e => e.TotalCost)
                 .HasPrecision(10, 2)
                 .HasColumnName("total_cost");
+        });
+
+        modelBuilder.Entity<VwOrderServicePartDetail>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_order_service_part_details");
+
+            entity.Property(e => e.Manufacturer)
+                .HasMaxLength(100)
+                .HasColumnName("manufacturer");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.OrderNumber)
+                .HasMaxLength(30)
+                .HasColumnName("order_number");
+            entity.Property(e => e.PartId).HasColumnName("part_id");
+            entity.Property(e => e.PartName)
+                .HasMaxLength(100)
+                .HasColumnName("part_name");
+            entity.Property(e => e.PartNumber)
+                .HasMaxLength(50)
+                .HasColumnName("part_number");
+            entity.Property(e => e.PriceAtMoment)
+                .HasPrecision(10, 2)
+                .HasColumnName("price_at_moment");
+            entity.Property(e => e.Quantity).HasColumnName("quantity");
+            entity.Property(e => e.ServiceId).HasColumnName("service_id");
+            entity.Property(e => e.ServiceName)
+                .HasMaxLength(100)
+                .HasColumnName("service_name");
+            entity.Property(e => e.TotalAmount)
+                .HasPrecision(10, 2)
+                .HasColumnName("total_amount");
+        });
+
+        modelBuilder.Entity<VwOrderStatusTimestamp>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_order_status_timestamps");
+
+            entity.Property(e => e.AcceptedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("accepted_at");
+            entity.Property(e => e.CanceledAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("canceled_at");
+            entity.Property(e => e.CompletedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("completed_at");
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("created_at");
+            entity.Property(e => e.IssuedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("issued_at");
+            entity.Property(e => e.LastStatusChangedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("last_status_changed_at");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.RepairStartedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("repair_started_at");
         });
 
         modelBuilder.Entity<VwPartUsageStatistic>(entity =>
@@ -658,6 +732,9 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.AcceptedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("accepted_at");
+            entity.Property(e => e.CanceledAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("canceled_at");
             entity.Property(e => e.CompletedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("completed_at");
@@ -668,6 +745,7 @@ public partial class RepairServiceDbContext : DbContext
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("issued_at");
             entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.OrderLifetimeInterval).HasColumnName("order_lifetime_interval");
             entity.Property(e => e.OrderNumber)
                 .HasMaxLength(30)
                 .HasColumnName("order_number");
@@ -677,6 +755,9 @@ public partial class RepairServiceDbContext : DbContext
             entity.Property(e => e.RepairDurationDays).HasColumnName("repair_duration_days");
             entity.Property(e => e.RepairDurationHours).HasColumnName("repair_duration_hours");
             entity.Property(e => e.RepairDurationInterval).HasColumnName("repair_duration_interval");
+            entity.Property(e => e.RepairStartedAt)
+                .HasColumnType("timestamp without time zone")
+                .HasColumnName("repair_started_at");
         });
 
         modelBuilder.Entity<VwServiceStatistic>(entity =>

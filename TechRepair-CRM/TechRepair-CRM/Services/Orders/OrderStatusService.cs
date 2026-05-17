@@ -30,7 +30,7 @@ public class OrderStatusService : IOrderStatusService
         if (status is null)
             throw new InvalidOperationException("Заказ не найден.");
 
-        if (status is "Closed" or "Canceled")
+        if (status is OrderStatus.Closed or OrderStatus.Canceled)
             throw new InvalidOperationException("Нельзя изменять закрытый или отменённый заказ.");
         
         return status;
@@ -43,7 +43,7 @@ public class OrderStatusService : IOrderStatusService
         if (status is null)
             throw new InvalidOperationException("Заказ не найден.");
 
-        if (status != "InRepair")
+        if (status != OrderStatus.InRepair)
             throw new InvalidOperationException("Услугу можно завершить только когда заказ находится в статусе InRepair.");
     }
     
@@ -51,10 +51,10 @@ public class OrderStatusService : IOrderStatusService
     {
         return currentStatus switch
         {
-            "Created" => newStatus is "Accepted" or "Canceled",
-            "Accepted" => newStatus is "InRepair" or "Canceled",
-            "InRepair" => newStatus is "Ready" or "Canceled",
-            "Ready" => newStatus is "Closed",
+            OrderStatus.Created => newStatus is OrderStatus.Accepted or OrderStatus.Canceled,
+            OrderStatus.Accepted => newStatus is OrderStatus.InRepair or OrderStatus.Canceled,
+            OrderStatus.InRepair => newStatus is OrderStatus.Ready or OrderStatus.Canceled,
+            OrderStatus.Ready => newStatus is OrderStatus.Closed or OrderStatus.Canceled,
             _ => false
         };
     }
@@ -69,14 +69,14 @@ public class OrderStatusService : IOrderStatusService
     public async Task<short> GetCreatedStatusIdAsync()
     {
         return await _db.OrderStatuses
-            .Where(os => os.StatusName == "Created")
+            .Where(os => os.StatusName == OrderStatus.Created)
             .Select(os => os.StatusId)
             .SingleAsync();
     }
     
     public async Task EnsureStatusTransitionAsync(int orderId, string newStatus)
     {
-        if (newStatus == "InRepair")
+        if (newStatus == OrderStatus.InRepair)
         {
             var hasServices = await _db.OrderServices
                 .AnyAsync(os => os.OrderId == orderId);
@@ -85,7 +85,7 @@ public class OrderStatusService : IOrderStatusService
                 throw new InvalidOperationException("Нельзя начать ремонт: в заказе нет услуг.");
         }
 
-        if (newStatus is "Ready" or "Closed")
+        if (newStatus is OrderStatus.Ready or OrderStatus.Closed)
         {
             var hasServices = await _db.OrderServices
                 .AnyAsync(os => os.OrderId == orderId);
@@ -100,19 +100,23 @@ public class OrderStatusService : IOrderStatusService
                 throw new InvalidOperationException("Не все услуги завершены.");
         }
 
-        if (newStatus == "Closed")
+        if (newStatus == OrderStatus.Closed)
         {
-            var totalCost = await _db.RepairOrders
+            var orderPaymentInfo = await _db.RepairOrders
                 .Where(o => o.OrderId == orderId)
-                .Select(o => o.TotalCost)
+                .Select(o => new
+                {
+                    o.TotalCost,
+                    o.IsWarrantyRepair,
+                    PaidAmount = _db.Payments
+                        .Where(p => p.OrderId == orderId)
+                        .Sum(p => (decimal?)p.Amount) ?? 0
+                })
                 .SingleAsync();
 
-            var paidAmount = await _db.Payments
-                .Where(p => p.OrderId == orderId)
-                .SumAsync(p => (decimal?)p.Amount) ?? 0;
-
-            if (paidAmount < totalCost)
-                throw new InvalidOperationException("Нельзя закрыть заказ: он не полностью оплачен.");
+            if (!orderPaymentInfo.IsWarrantyRepair &&
+                orderPaymentInfo.PaidAmount < orderPaymentInfo.TotalCost)
+                throw new InvalidOperationException("Нельзя закрыть негарантийный заказ: он не полностью оплачен.");
         }
     }
 }

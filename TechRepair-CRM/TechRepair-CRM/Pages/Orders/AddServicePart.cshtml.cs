@@ -2,42 +2,46 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using TechRepair_CRM.DTOs.Orders.Parts;
+using TechRepair_CRM.DTOs.Orders.Services.Parts;
 using TechRepair_CRM.Services.Lookups;
 using TechRepair_CRM.Services.Orders;
 
 namespace TechRepair_CRM.Pages.Orders;
 
 [Authorize(Roles = "Admin,Manager")]
-public class AddPartModel : PageModel
+public class AddServicePartModel : PageModel
 {
-    private readonly ILookupService _lookupService;
     private readonly IOrderCommandService _orderCommandService;
+    private readonly ILookupService _lookupService;
 
-    public AddPartModel(
-        ILookupService lookupService,
-        IOrderCommandService orderCommandService)
+    public AddServicePartModel(
+        IOrderCommandService orderCommandService,
+        ILookupService lookupService)
     {
-        _lookupService = lookupService;
         _orderCommandService = orderCommandService;
+        _lookupService = lookupService;
     }
 
     [BindProperty]
-    public AddOrderPartRequest Input { get; set; } = new();
+    public AddOrderServicePartRequest Input { get; set; } = new();
 
     public int OrderId { get; private set; }
+    public int ServiceId { get; private set; }
 
     public IReadOnlyList<SelectListItem> Parts { get; private set; } = [];
 
-    public async Task OnGetAsync(int orderId)
+    public async Task OnGetAsync(int orderId, int serviceId)
     {
         OrderId = orderId;
+        ServiceId = serviceId;
+
         await LoadSelectListsAsync();
     }
 
-    public async Task<IActionResult> OnPostAsync(int orderId)
+    public async Task<IActionResult> OnPostAsync(int orderId, int serviceId)
     {
         OrderId = orderId;
+        ServiceId = serviceId;
 
         if (!ModelState.IsValid)
         {
@@ -47,10 +51,8 @@ public class AddPartModel : PageModel
 
         try
         {
-            await _orderCommandService.AddPartToOrderAsync(orderId, Input);
-
-            TempData["Success"] = "Деталь добавлена к заказу.";
-            return RedirectToPage("/Orders/AddPart", new { orderId });
+            await _orderCommandService.AddPartToOrderServiceAsync(orderId, serviceId, Input);
+            return RedirectToPage("/Orders/Details", new { id = orderId });
         }
         catch (Exception ex)
         {

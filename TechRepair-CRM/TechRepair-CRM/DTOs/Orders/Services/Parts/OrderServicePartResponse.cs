@@ -1,7 +1,8 @@
-﻿namespace TechRepair_CRM.DTOs.Orders.Parts;
+﻿namespace TechRepair_CRM.DTOs.Orders.Services.Parts;
 
-public record OrderPartResponse(
+public record OrderServicePartResponse(
     int OrderId,
+    int ServiceId,
     int PartId,
     string PartName,
     string? PartNumber,

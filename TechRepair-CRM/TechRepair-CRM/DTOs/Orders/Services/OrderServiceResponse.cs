@@ -1,4 +1,6 @@
-﻿namespace TechRepair_CRM.DTOs.Orders.Services;
+﻿using TechRepair_CRM.DTOs.Orders.Services.Parts;
+
+namespace TechRepair_CRM.DTOs.Orders.Services;
 
 public record OrderServiceResponse(
     int OrderId,
@@ -10,5 +12,6 @@ public record OrderServiceResponse(
     decimal PriceAtMoment,
     decimal TotalPrice,
     DateTime? CompletedAt,
-    string? Notes
+    string? Notes,
+    IReadOnlyList<OrderServicePartResponse> Parts
 );

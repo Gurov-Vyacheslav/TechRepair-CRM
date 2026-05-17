@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TechRepair_CRM.DTOs.Orders.Parts;
+namespace TechRepair_CRM.DTOs.Orders.Services.Parts;
 
-public record EditOrderPartRequest
+public record EditOrderServicePartRequest
 {
     [Required]
     [Range(1, int.MaxValue, ErrorMessage = "Количество должно быть больше 0")]

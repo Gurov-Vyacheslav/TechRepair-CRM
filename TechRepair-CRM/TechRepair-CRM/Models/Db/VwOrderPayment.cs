@@ -9,11 +9,15 @@ public partial class VwOrderPayment
 
     public string? OrderNumber { get; set; }
 
+    public bool? IsWarrantyRepair { get; set; }
+
     public decimal? TotalCost { get; set; }
 
     public decimal? PaidAmount { get; set; }
 
     public decimal? RemainingAmount { get; set; }
+
+    public decimal? RequiredToCloseAmount { get; set; }
 
     public long? PaymentsCount { get; set; }
 

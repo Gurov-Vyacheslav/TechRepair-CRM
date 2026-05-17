@@ -1,12 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Data;
 using TechRepair_CRM.DTOs.Orders;
-using TechRepair_CRM.DTOs.Orders.Parts;
 using TechRepair_CRM.DTOs.Orders.Payments;
 using TechRepair_CRM.DTOs.Orders.Services;
+using TechRepair_CRM.DTOs.Orders.Services.Parts;
 using TechRepair_CRM.DTOs.Orders.StatusHistory;
 using TechRepair_CRM.Models.Db;
-using TechRepair_CRM.Services.CurrentUser;
 
 namespace TechRepair_CRM.Services.Orders;
 
@@ -34,7 +33,7 @@ public class OrderQueryService : IOrderQueryService
 
         if (!string.IsNullOrWhiteSpace(filter?.OrderNumber))
         {
-            orders = orders.Where(o => o.OrderNumber.Contains(filter.OrderNumber));
+            orders = orders.Where(o => o.OrderNumber!.Contains(filter.OrderNumber));
         }
 
         if (!string.IsNullOrWhiteSpace(filter?.Status))
@@ -44,7 +43,7 @@ public class OrderQueryService : IOrderQueryService
 
         if (!string.IsNullOrWhiteSpace(filter?.ClientPhone))
         {
-            orders = orders.Where(o => o.ClientPhone.Contains(filter.ClientPhone));
+            orders = orders.Where(o => o.ClientPhone!.Contains(filter.ClientPhone));
         }
 
         if (filter?.CreatedFrom is not null)
@@ -108,14 +107,26 @@ public class OrderQueryService : IOrderQueryService
             return null;
 
         var services = await GetOrderServicesAsync(orderId);
-        var parts = await GetOrderPartsAsync(orderId);
+        var serviceParts = await GetOrderServicePartsAsync(orderId);
         var payments = await GetOrderPaymentsAsync(orderId);
         var history = await GetOrderHistoryAsync(orderId);
-        
+
+        var partsByService = serviceParts
+            .GroupBy(p => p.ServiceId)
+            .ToDictionary(g => g.Key,
+                IReadOnlyList<OrderServicePartResponse> (g) => g.ToList());
+
+        var servicesWithParts = services
+            .Select(s => s with
+            {
+                Parts = partsByService.GetValueOrDefault(s.ServiceId)
+                        ?? new List<OrderServicePartResponse>()
+            })
+            .ToList();
+
         return order with
         {
-            Services = services,
-            Parts = parts,
+            Services = servicesWithParts,
             Payments = payments,
             StatusHistory = history
         };
@@ -126,34 +137,34 @@ public class OrderQueryService : IOrderQueryService
         return await _db.VwOrderFullInfos
             .Where(o => o.OrderId == orderId)
             .Select(o => new OrderDetailsResponse(
-                o.OrderId.Value,
-                o.OrderNumber,
-                o.CreatedAt.Value,
+                o.OrderId!.Value,
+                o.OrderNumber!,
+                o.CreatedAt!.Value,
                 o.AcceptedAt,
                 o.CompletedAt,
                 o.IssuedAt,
 
-                o.OrderStatus,
+                o.OrderStatus!,
 
-                o.ClientId.Value,
-                o.ClientFirstName,
-                o.ClientLastName,
-                o.ClientPhone,
+                o.ClientId!.Value,
+                o.ClientFirstName!,
+                o.ClientLastName!,
+                o.ClientPhone!,
                 o.ClientEmail,
 
-                o.DeviceId.Value,
-                o.DeviceType,
+                o.DeviceId!.Value,
+                o.DeviceType!,
                 o.Brand,
                 o.Model,
                 o.SerialNumber,
                 o.EquipmentDescription,
                 o.ExternalCondition,
 
-                o.ProblemDescription,
+                o.ProblemDescription!,
                 o.DiagnosticResult,
-                o.EstimatedCost.Value,
-                o.TotalCost.Value,
-                o.IsWarrantyRepair.Value,
+                o.EstimatedCost!.Value,
+                o.TotalCost!.Value,
+                o.IsWarrantyRepair!.Value,
                 o.WarrantyMonths,
                 o.OrderNotes,
 
@@ -163,14 +174,13 @@ public class OrderQueryService : IOrderQueryService
                 o.RemainingAmount ?? 0,
 
                 new List<OrderServiceResponse>(),
-                new List<OrderPartResponse>(),
                 new List<PaymentResponse>(),
                 new List<OrderStatusHistoryResponse>()
             ))
             .FirstOrDefaultAsync();
     }
 
-    private async Task<List<OrderServiceResponse>> GetOrderServicesAsync(int orderId)
+    private async Task<IReadOnlyList<OrderServiceResponse>> GetOrderServicesAsync(int orderId)
     {
         return await _db.OrderServices
             .Where(os => os.OrderId == orderId)
@@ -186,28 +196,30 @@ public class OrderQueryService : IOrderQueryService
                 os.PriceAtMoment,
                 os.Quantity * os.PriceAtMoment,
                 os.CompletedAt,
-                os.Notes
+                os.Notes,
+                new List<OrderServicePartResponse>()
             ))
             .ToListAsync();
     }
 
-    private async Task<List<OrderPartResponse>> GetOrderPartsAsync(int orderId)
+    private async Task<IReadOnlyList<OrderServicePartResponse>> GetOrderServicePartsAsync(int orderId)
     {
-        return await _db.OrderParts
-            .Where(op => op.OrderId == orderId)
-            .Select(op => new OrderPartResponse(
-                op.OrderId,
-                op.PartId,
-                op.Part.PartName,
-                op.Part.PartNumber,
-                op.Quantity,
-                op.PriceAtMoment,
-                op.Quantity * op.PriceAtMoment
+        return await _db.OrderServiceParts
+            .Where(osp => osp.OrderId == orderId)
+            .Select(osp => new OrderServicePartResponse(
+                osp.OrderId,
+                osp.ServiceId,
+                osp.PartId,
+                osp.Part.PartName,
+                osp.Part.PartNumber,
+                osp.Quantity,
+                osp.PriceAtMoment,
+                osp.Quantity * osp.PriceAtMoment
             ))
             .ToListAsync();
     }
 
-    private async Task<List<PaymentResponse>> GetOrderPaymentsAsync(int orderId)
+    private async Task<IReadOnlyList<PaymentResponse>> GetOrderPaymentsAsync(int orderId)
     {
         return await _db.Payments
             .Where(p => p.OrderId == orderId)
@@ -224,7 +236,7 @@ public class OrderQueryService : IOrderQueryService
             .ToListAsync();
     }
 
-    private async Task<List<OrderStatusHistoryResponse>> GetOrderHistoryAsync(int orderId)
+    private async Task<IReadOnlyList<OrderStatusHistoryResponse>> GetOrderHistoryAsync(int orderId)
     {
         return await _db.OrderStatusHistories
             .Where(h => h.OrderId == orderId)
@@ -252,13 +264,16 @@ public class OrderQueryService : IOrderQueryService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<EditOrderPartRequest?> GetOrderPartEditFormAsync(int orderId, int partId)
+    public async Task<EditOrderServicePartRequest?> GetOrderServicePartEditFormAsync(int orderId, int serviceId, int partId)
     {
-        return await _db.OrderParts
-            .Where(op => op.OrderId == orderId && op.PartId == partId)
-            .Select(op => new EditOrderPartRequest
+        return await _db.OrderServiceParts
+            .Where(osp => 
+                osp.OrderId == orderId 
+                && osp.ServiceId == serviceId 
+                && osp.PartId == partId)
+            .Select(osp => new EditOrderServicePartRequest
             {
-                Quantity = op.Quantity
+                Quantity = osp.Quantity
             })
             .FirstOrDefaultAsync();
     }

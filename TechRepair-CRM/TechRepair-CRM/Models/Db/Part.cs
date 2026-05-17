@@ -13,11 +13,11 @@ public partial class Part
 
     public string? Manufacturer { get; set; }
 
-    public decimal? DefaultPrice { get; set; }
+    public decimal DefaultPrice { get; set; }
 
     public bool IsActive { get; set; }
 
     public string? Description { get; set; }
 
-    public virtual ICollection<OrderPart> OrderParts { get; set; } = new List<OrderPart>();
+    public virtual ICollection<OrderServicePart> OrderServiceParts { get; set; } = new List<OrderServicePart>();
 }

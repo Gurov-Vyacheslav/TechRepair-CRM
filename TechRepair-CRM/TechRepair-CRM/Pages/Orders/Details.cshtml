@@ -1,4 +1,5 @@
 ﻿@page "{id:int}"
+@using TechRepair_CRM.Models.Db
 @model TechRepair_CRM.Pages.Orders.DetailsModel
 
 @{
@@ -64,7 +65,7 @@
     </tr>
 </table>
 
-@if (Model.Order.OrderStatus is not ("Closed" or "Canceled") && canManageOrder)
+@if (Model.Order.OrderStatus is not (OrderStatus.Closed or OrderStatus.Canceled) && canManageOrder)
 {
     <h2>Действия</h2>
 
@@ -74,13 +75,7 @@
            class="btn btn-primary">
             Добавить услугу
         </a>
-
-        <a asp-page="/Orders/AddPart"
-           asp-route-orderId="@Model.Order.OrderId"
-           class="btn btn-primary">
-            Добавить деталь
-        </a>
-
+        
         <a asp-page="/Orders/AddPayment"
            asp-route-orderId="@Model.Order.OrderId"
            class="btn btn-primary">
@@ -93,10 +88,7 @@
             Изменить заказ
         </a>
     </div>
-}
 
-@if (Model.Order.OrderStatus is not ("Closed" or "Canceled") && canManageOrder)
-{
     <h2>Смена статуса</h2>
 
     <form method="post"
@@ -110,27 +102,28 @@
         </div>
 
         <div class="status-buttons">
-            @if (Model.Order.OrderStatus == "Created")
+            @if (Model.Order.OrderStatus == OrderStatus.Created)
             {
                 <button type="submit" name="newStatus" value="Accepted" class="btn btn-primary">Принять</button>
 
                 <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">Отменить</button>
             }
-            else if (Model.Order.OrderStatus == "Accepted")
+            else if (Model.Order.OrderStatus == OrderStatus.Accepted)
             {
                 <button type="submit" name="newStatus" value="InRepair" class="btn btn-primary">Начать ремонт</button>
 
                 <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">Отменить</button>
             }
-            else if (Model.Order.OrderStatus == "InRepair")
+            else if (Model.Order.OrderStatus == OrderStatus.InRepair)
             {
                 <button type="submit" name="newStatus" value="Ready" class="btn btn-primary">Готов</button>
 
                 <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">Отменить</button>
             }
-            else if (Model.Order.OrderStatus == "Ready")
+            else if (Model.Order.OrderStatus == OrderStatus.Ready)
             {
                 <button type="submit" name="newStatus" value="Closed" class="btn btn-primary">Закрыть</button>
+                <button type="submit" name="newStatus" value="Canceled" class="btn btn-danger">Отменить</button>
             }
         </div>
     </form>
@@ -248,7 +241,7 @@ else
                     @{
                         var canCompleteService =
                             service.CompletedAt is null &&
-                            Model.Order.OrderStatus == "InRepair" &&
+                            Model.Order.OrderStatus == OrderStatus.InRepair &&
                             (
                                 canManageOrder ||
                                 service.TechnicianId == Model.CurrentTechnicianId
@@ -267,9 +260,9 @@ else
                             </button>
                         </form>
                     }
-                    
+
                     @if (canManageOrder &&
-                         Model.Order.OrderStatus is not "Closed" and not "Canceled" &&
+                         Model.Order.OrderStatus is not OrderStatus.Closed and not OrderStatus.Canceled &&
                          service.CompletedAt is null)
                     {
                         <a asp-page="/Orders/EditService"
@@ -278,59 +271,67 @@ else
                            class="btn btn-small btn-primary">
                             Изменить
                         </a>
-                    }
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
-}
 
-<h2>Запчасти</h2>
-
-@if (Model.Order.Parts.Count == 0)
-{
-    <p>Запчасти не добавлены.</p>
-}
-else
-{
-    <table>
-        <thead>
-        <tr>
-            <th>Запчасть</th>
-            <th>Артикул</th>
-            <th>Количество</th>
-            <th>Цена</th>
-            <th>Сумма</th>
-            <th>Действие</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var part in Model.Order.Parts)
-        {
-            <tr>
-                <td>@part.PartName</td>
-                <td>@part.PartNumber</td>
-                <td>@part.Quantity</td>
-                <td>@part.PriceAtMoment</td>
-                <td>@part.TotalPrice</td>
-                <td>
-                    @if (canManageOrder &&
-                         Model.Order.OrderStatus is not "Closed" and not "Canceled")
-                    {
-                        <a asp-page="/Orders/EditPart"
+                        <a asp-page="/Orders/AddServicePart"
                            asp-route-orderId="@Model.Order.OrderId"
-                           asp-route-partId="@part.PartId"
+                           asp-route-serviceId="@service.ServiceId"
                            class="btn btn-small btn-primary">
-                            Изменить
+                            Добавить деталь
                         </a>
                     }
                 </td>
             </tr>
+            @if (service.Parts.Count != 0)
+            {
+                <tr>
+                    <td colspan="7">
+                        <h3>Детали услуги</h3>
+                            <table class="nested-table">
+                                <thead>
+                                <tr>
+                                    <th>Деталь</th>
+                                    <th>Артикул</th>
+                                    <th>Количество</th>
+                                    <th>Цена</th>
+                                    <th>Сумма</th>
+                                    <th>Действие</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var part in service.Parts)
+                                {
+                                    <tr>
+                                        <td>@part.PartName</td>
+                                        <td>@part.PartNumber</td>
+                                        <td>@part.Quantity</td>
+                                        <td>@part.PriceAtMoment</td>
+                                        <td>@part.TotalPrice</td>
+                                        <td>
+                                            @if (canManageOrder &&
+                                                 Model.Order.OrderStatus is not OrderStatus.Closed and not OrderStatus.Canceled
+                                                     && service.CompletedAt is null)
+                                            {
+                                                <a asp-page="/Orders/EditServicePart"
+                                                   asp-route-orderId="@Model.Order.OrderId"
+                                                   asp-route-serviceId="@service.ServiceId"
+                                                   asp-route-partId="@part.PartId"
+                                                   class="btn btn-small btn-primary">
+                                                    Изменить
+                                                </a>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                    </td>
+                </tr>
+            }
         }
         </tbody>
     </table>
 }
+
 
 <h2>Оплаты</h2>
 

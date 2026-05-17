@@ -33,50 +33,43 @@ public class TechnicianWorkService : ITechnicianWorkService
     }
     
     private async Task<IReadOnlyList<MyWorkItemResponse>> GetWorkItemsAsync(
-        int technicianId, 
+        int technicianId,
         bool onlyActive)
     {
         var query =
             from os in _db.OrderServices
-            join ro in _db.RepairOrders on os.OrderId equals ro.OrderId
-            join status in _db.OrderStatuses on ro.StatusId equals status.StatusId
             join service in _db.Services on os.ServiceId equals service.ServiceId
-            join device in _db.Devices on ro.DeviceId equals device.DeviceId
-            join deviceType in _db.DeviceTypes on device.DeviceTypeId equals deviceType.DeviceTypeId
-            join client in _db.Clients on device.ClientId equals client.ClientId
+            from orderInfo in _db.VwOrderFullInfos
+                .Where(o => o.OrderId == os.OrderId)
             where os.TechnicianId == technicianId
             select new
             {
                 os,
-                ro,
-                status,
                 service,
-                device,
-                deviceType,
-                client
+                orderInfo
             };
 
         if (onlyActive)
         {
             query = query.Where(x =>
                 x.os.CompletedAt == null &&
-                x.status.StatusName != "Closed" &&
-                x.status.StatusName != "Canceled");
+                x.orderInfo.OrderStatus != "Closed" &&
+                x.orderInfo.OrderStatus != "Canceled");
         }
 
         return await query
-            .OrderByDescending(x => x.ro.CreatedAt)
-            .ThenBy(x => x.ro.OrderNumber)
+            .OrderByDescending(x => x.orderInfo.CreatedAt)
+            .ThenBy(x => x.orderInfo.OrderNumber)
             .Select(x => new MyWorkItemResponse(
-                x.ro.OrderId,
-                x.ro.OrderNumber,
-                x.ro.CreatedAt,
-                x.status.StatusName,
-                x.client.LastName + " " + x.client.FirstName,
-                x.client.Phone,
-                x.deviceType.TypeName,
-                x.device.Brand,
-                x.device.Model,
+                x.orderInfo.OrderId!.Value,
+                x.orderInfo.OrderNumber!,
+                x.orderInfo.CreatedAt ?? DateTime.MinValue,
+                x.orderInfo.OrderStatus!,
+                x.orderInfo.ClientLastName + " " + x.orderInfo.ClientFirstName,
+                x.orderInfo.ClientPhone!,
+                x.orderInfo.DeviceType!,
+                x.orderInfo.Brand,
+                x.orderInfo.Model,
                 x.os.ServiceId,
                 x.service.ServiceName,
                 x.os.Quantity,

@@ -21,6 +21,8 @@ public partial class OrderService
 
     public virtual RepairOrder Order { get; set; } = null!;
 
+    public virtual ICollection<OrderServicePart> OrderServiceParts { get; set; } = new List<OrderServicePart>();
+
     public virtual Service Service { get; set; } = null!;
 
     public virtual Technician? Technician { get; set; }

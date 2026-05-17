@@ -12,10 +12,10 @@ WITH service_cost AS (
 ),
 part_cost AS (
     SELECT
-        op.order_id,
-        COALESCE(SUM(op.quantity * op.price_at_moment), 0)::NUMERIC(10,2) AS part_sum
-    FROM order_part op
-    GROUP BY op.order_id
+        osp.order_id,
+        COALESCE(SUM(osp.quantity * osp.price_at_moment), 0)::NUMERIC(10,2) AS part_sum
+    FROM order_service_part osp
+    GROUP BY osp.order_id
 )
 SELECT
     ro.order_id,
@@ -34,24 +34,47 @@ CREATE OR REPLACE VIEW vw_order_payments AS
 SELECT
     ro.order_id,
     ro.order_number,
+    ro.is_warranty_repair,
     ro.total_cost::NUMERIC(10,2) AS total_cost,
     COALESCE(SUM(p.amount), 0)::NUMERIC(10,2) AS paid_amount,
     (ro.total_cost - COALESCE(SUM(p.amount), 0))::NUMERIC(10,2) AS remaining_amount,
+    CASE
+        WHEN ro.is_warranty_repair THEN 0::NUMERIC(10,2)
+        ELSE (ro.total_cost - COALESCE(SUM(p.amount), 0))::NUMERIC(10,2)
+    END AS required_to_close_amount,
     COUNT(p.payment_id) AS payments_count,
     MAX(p.payment_date) AS last_payment_date
 FROM repair_order ro
 LEFT JOIN payment p ON p.order_id = ro.order_id
-GROUP BY ro.order_id, ro.order_number, ro.total_cost;
+GROUP BY ro.order_id, ro.order_number, ro.is_warranty_repair, ro.total_cost;
+
+
+CREATE OR REPLACE VIEW vw_order_status_timestamps AS
+SELECT
+    osh.order_id,
+    MIN(osh.changed_at) FILTER (WHERE os.status_name = 'Created')  AS created_at,
+    MIN(osh.changed_at) FILTER (WHERE os.status_name = 'Accepted') AS accepted_at,
+    MIN(osh.changed_at) FILTER (WHERE os.status_name = 'InRepair') AS repair_started_at,
+    MIN(osh.changed_at) FILTER (WHERE os.status_name = 'Ready')    AS completed_at,
+    MIN(osh.changed_at) FILTER (WHERE os.status_name = 'Closed')   AS issued_at,
+    MIN(osh.changed_at) FILTER (WHERE os.status_name = 'Canceled') AS canceled_at,
+    MAX(osh.changed_at) AS last_status_changed_at
+FROM order_status_history osh
+JOIN order_status os ON os.status_id = osh.status_id
+GROUP BY osh.order_id;
 
 
 CREATE OR REPLACE VIEW vw_order_full_info AS
 SELECT
     ro.order_id,
     ro.order_number,
-    ro.created_at,
-    ro.accepted_at,
-    ro.completed_at,
-    ro.issued_at,
+    ost.created_at,
+    ost.accepted_at,
+    ost.repair_started_at,
+    ost.completed_at,
+    ost.issued_at,
+    ost.canceled_at,
+    ost.last_status_changed_at,
     ro.problem_description,
     ro.diagnostic_result,
     ro.estimated_cost::NUMERIC(10,2) AS estimated_cost,
@@ -82,12 +105,14 @@ SELECT
 
     op.paid_amount,
     op.remaining_amount,
+    op.required_to_close_amount,
     op.payments_count
 FROM repair_order ro
 JOIN order_status st ON st.status_id = ro.status_id
 JOIN device d ON d.device_id = ro.device_id
 JOIN client c ON c.client_id = d.client_id
 JOIN device_type dt ON dt.device_type_id = d.device_type_id
+LEFT JOIN vw_order_status_timestamps ost ON ost.order_id = ro.order_id
 LEFT JOIN vw_order_cost_breakdown cb ON cb.order_id = ro.order_id
 LEFT JOIN vw_order_payments op ON op.order_id = ro.order_id;
 
@@ -132,39 +157,70 @@ SELECT
     p.part_name,
     p.manufacturer,
     p.is_active,
-    COUNT(op.order_id) AS usage_count,
-    COALESCE(SUM(op.quantity), 0) AS total_quantity,
-    COALESCE(SUM(op.quantity * op.price_at_moment), 0)::NUMERIC(10,2) AS total_amount
+    COUNT(osp.part_id) AS usage_count,
+    COALESCE(SUM(osp.quantity), 0) AS total_quantity,
+    COALESCE(SUM(osp.quantity * osp.price_at_moment), 0)::NUMERIC(10,2) AS total_amount
 FROM part p
-LEFT JOIN order_part op ON op.part_id = p.part_id
+LEFT JOIN order_service_part osp ON osp.part_id = p.part_id
 GROUP BY p.part_id, p.part_number, p.part_name, p.manufacturer, p.is_active;
+
+
+CREATE OR REPLACE VIEW vw_order_service_part_details AS
+SELECT
+    ro.order_id,
+    ro.order_number,
+    os.service_id,
+    s.service_name,
+    osp.part_id,
+    p.part_number,
+    p.part_name,
+    p.manufacturer,
+    osp.quantity,
+    osp.price_at_moment::NUMERIC(10,2) AS price_at_moment,
+    (osp.quantity * osp.price_at_moment)::NUMERIC(10,2) AS total_amount
+FROM order_service_part osp
+JOIN order_service os
+    ON os.order_id = osp.order_id
+   AND os.service_id = osp.service_id
+JOIN repair_order ro ON ro.order_id = osp.order_id
+JOIN service s ON s.service_id = osp.service_id
+JOIN part p ON p.part_id = osp.part_id;
+
 
 CREATE OR REPLACE VIEW vw_repair_duration AS
 SELECT
     ro.order_id,
     ro.order_number,
-    ro.created_at,
-    ro.accepted_at,
-    ro.completed_at,
-    ro.issued_at,
+    ost.created_at,
+    ost.accepted_at,
+    ost.repair_started_at,
+    ost.completed_at,
+    ost.issued_at,
+    ost.canceled_at,
     os.status_name AS order_status,
     CASE
-        WHEN ro.completed_at IS NOT NULL
-            THEN ro.completed_at - ro.created_at
+        WHEN ost.completed_at IS NOT NULL AND ost.repair_started_at IS NOT NULL
+            THEN ost.completed_at - ost.repair_started_at
         ELSE NULL
     END AS repair_duration_interval,
     CASE
-        WHEN ro.completed_at IS NOT NULL
-            THEN ROUND(EXTRACT(EPOCH FROM (ro.completed_at - ro.created_at)) / 3600.0, 2)
+        WHEN ost.completed_at IS NOT NULL AND ost.repair_started_at IS NOT NULL
+            THEN ROUND(EXTRACT(EPOCH FROM (ost.completed_at - ost.repair_started_at)) / 3600.0, 2)
         ELSE NULL
     END AS repair_duration_hours,
     CASE
-        WHEN ro.completed_at IS NOT NULL
-            THEN ROUND(EXTRACT(EPOCH FROM (ro.completed_at - ro.created_at)) / 86400.0, 2)
+        WHEN ost.completed_at IS NOT NULL AND ost.repair_started_at IS NOT NULL
+            THEN ROUND(EXTRACT(EPOCH FROM (ost.completed_at - ost.repair_started_at)) / 86400.0, 2)
         ELSE NULL
-    END AS repair_duration_days
+    END AS repair_duration_days,
+    CASE
+        WHEN ost.issued_at IS NOT NULL AND ost.created_at IS NOT NULL
+            THEN ost.issued_at - ost.created_at
+        ELSE NULL
+    END AS order_lifetime_interval
 FROM repair_order ro
-JOIN order_status os ON os.status_id = ro.status_id;
+JOIN order_status os ON os.status_id = ro.status_id
+LEFT JOIN vw_order_status_timestamps ost ON ost.order_id = ro.order_id;
 
 
 CREATE OR REPLACE VIEW vw_client_order_history AS
@@ -183,12 +239,14 @@ SELECT
 
     ro.order_id,
     ro.order_number,
-    ro.created_at,
-    ro.completed_at,
-    ro.issued_at,
+    ost.created_at,
+    ost.completed_at,
+    ost.issued_at,
+    ost.canceled_at,
     os.status_name AS order_status,
     ro.problem_description,
     ro.total_cost::NUMERIC(10,2) AS total_cost,
+    ro.is_warranty_repair,
 
     COALESCE(SUM(p.amount), 0)::NUMERIC(10,2) AS paid_amount,
     (ro.total_cost - COALESCE(SUM(p.amount), 0))::NUMERIC(10,2) AS remaining_amount
@@ -197,12 +255,13 @@ JOIN device d ON d.client_id = c.client_id
 JOIN device_type dt ON dt.device_type_id = d.device_type_id
 LEFT JOIN repair_order ro ON ro.device_id = d.device_id
 LEFT JOIN order_status os ON os.status_id = ro.status_id
+LEFT JOIN vw_order_status_timestamps ost ON ost.order_id = ro.order_id
 LEFT JOIN payment p ON p.order_id = ro.order_id
 GROUP BY
     c.client_id, c.first_name, c.last_name, c.phone, c.email,
     d.device_id, dt.type_name, d.brand, d.model, d.serial_number,
-    ro.order_id, ro.order_number, ro.created_at, ro.completed_at, ro.issued_at,
-    os.status_name, ro.problem_description, ro.total_cost;
+    ro.order_id, ro.order_number, ost.created_at, ost.completed_at, ost.issued_at, ost.canceled_at,
+    os.status_name, ro.problem_description, ro.total_cost, ro.is_warranty_repair;
 
 -- =========================================================
 -- ФУНКЦИИ
@@ -224,7 +283,7 @@ BEGIN
 
     SELECT COALESCE(SUM(quantity * price_at_moment), 0)::NUMERIC(10,2)
     INTO v_part_sum
-    FROM order_part
+    FROM order_service_part
     WHERE order_id = p_order_id;
 
     v_total := COALESCE(v_service_sum, 0) + COALESCE(v_part_sum, 0);
@@ -239,62 +298,7 @@ $$;
 
 
 -- =========================================================
--- ТРИГГЕР 1. Начальная запись в историю статусов
--- =========================================================
-
-CREATE OR REPLACE FUNCTION trgfn_repair_order_initial_history()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    INSERT INTO order_status_history (
-        order_id,
-        status_id,
-        changed_at,
-        comment
-    )
-    VALUES (
-        NEW.order_id,
-        NEW.status_id,
-        NEW.created_at,
-        'Initial status'
-    );
-
-    RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_repair_order_initial_history
-AFTER INSERT ON repair_order
-FOR EACH ROW
-EXECUTE FUNCTION trgfn_repair_order_initial_history();
-
--- =========================================================
--- ТРИГГЕР 2. ORDER_STATUS_HISTORY = append-only
--- =========================================================
-
-CREATE OR REPLACE FUNCTION trgfn_order_status_history_append_only()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    RAISE EXCEPTION 'order_status_history is append-only: UPDATE and DELETE are not allowed';
-END;
-$$;
-
-CREATE TRIGGER trg_order_status_history_no_update
-BEFORE UPDATE ON order_status_history
-FOR EACH ROW
-EXECUTE FUNCTION trgfn_order_status_history_append_only();
-
-CREATE TRIGGER trg_order_status_history_no_delete
-BEFORE DELETE ON order_status_history
-FOR EACH ROW
-EXECUTE FUNCTION trgfn_order_status_history_append_only();
-
-
--- =========================================================
--- ТРИГГЕР 3. Пересчёт total_cost после изменения услуг
+-- ТРИГГЕР 1. Пересчёт total_cost после изменения услуг
 -- =========================================================
 
 CREATE OR REPLACE FUNCTION trgfn_recalculate_total_from_order_service()
@@ -327,10 +331,10 @@ EXECUTE FUNCTION trgfn_recalculate_total_from_order_service();
 
 
 -- =========================================================
--- ТРИГГЕР 4. Пересчёт total_cost после изменения запчастей
+-- ТРИГГЕР 2. Пересчёт total_cost после изменения деталей услуги
 -- =========================================================
 
-CREATE OR REPLACE FUNCTION trgfn_recalculate_total_from_order_part()
+CREATE OR REPLACE FUNCTION trgfn_recalculate_total_from_order_service_part()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 AS $$
@@ -343,24 +347,24 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_recalculate_total_after_order_part_ins
-AFTER INSERT ON order_part
+CREATE TRIGGER trg_recalculate_total_after_order_service_part_ins
+AFTER INSERT ON order_service_part
 FOR EACH ROW
-EXECUTE FUNCTION trgfn_recalculate_total_from_order_part();
+EXECUTE FUNCTION trgfn_recalculate_total_from_order_service_part();
 
-CREATE TRIGGER trg_recalculate_total_after_order_part_upd
-AFTER UPDATE ON order_part
+CREATE TRIGGER trg_recalculate_total_after_order_service_part_upd
+AFTER UPDATE ON order_service_part
 FOR EACH ROW
-EXECUTE FUNCTION trgfn_recalculate_total_from_order_part();
+EXECUTE FUNCTION trgfn_recalculate_total_from_order_service_part();
 
-CREATE TRIGGER trg_recalculate_total_after_order_part_del
-AFTER DELETE ON order_part
+CREATE TRIGGER trg_recalculate_total_after_order_service_part_del
+AFTER DELETE ON order_service_part
 FOR EACH ROW
-EXECUTE FUNCTION trgfn_recalculate_total_from_order_part();
+EXECUTE FUNCTION trgfn_recalculate_total_from_order_service_part();
 
 
 -- =========================================================
--- ТРИГГЕР 5. Запрет переплаты
+-- ТРИГГЕР 3. Запрет переплаты
 -- =========================================================
 
 CREATE OR REPLACE FUNCTION trgfn_prevent_overpayment()
@@ -380,18 +384,10 @@ BEGIN
         RAISE EXCEPTION 'Repair order % not found', NEW.order_id;
     END IF;
 
-    IF TG_OP = 'UPDATE' THEN
-        SELECT COALESCE(SUM(amount), 0)
-        INTO v_already_paid
-        FROM payment
-        WHERE order_id = NEW.order_id
-          AND payment_id <> OLD.payment_id;
-    ELSE
-        SELECT COALESCE(SUM(amount), 0)
-        INTO v_already_paid
-        FROM payment
-        WHERE order_id = NEW.order_id;
-    END IF;
+    SELECT COALESCE(SUM(amount), 0)
+    INTO v_already_paid
+    FROM payment
+    WHERE order_id = NEW.order_id;
 
     IF v_already_paid + NEW.amount > v_total_cost THEN
         RAISE EXCEPTION
@@ -410,7 +406,7 @@ EXECUTE FUNCTION trgfn_prevent_overpayment();
 
 
 -- =========================================================
--- ТРИГГЕР 6. Запрет изменения услуг/деталей закрытого заказа
+-- ТРИГГЕР 4. Запрет изменения услуг/деталей закрытого или отменённого заказа
 -- =========================================================
 
 CREATE OR REPLACE FUNCTION trgfn_prevent_modify_final_order_lines()
@@ -444,14 +440,14 @@ BEFORE INSERT OR UPDATE OR DELETE ON order_service
 FOR EACH ROW
 EXECUTE FUNCTION trgfn_prevent_modify_final_order_lines();
 
-CREATE TRIGGER trg_prevent_modify_final_order_part
-BEFORE INSERT OR UPDATE OR DELETE ON order_part
+CREATE TRIGGER trg_prevent_modify_final_order_service_part
+BEFORE INSERT OR UPDATE OR DELETE ON order_service_part
 FOR EACH ROW
 EXECUTE FUNCTION trgfn_prevent_modify_final_order_lines();
 
 
 -- =========================================================
--- ТРИГГЕР 7. Запрет изменения самого закрытого/отменённого заказа
+-- ТРИГГЕР 5. Запрет изменения самого закрытого/отменённого заказа
 -- =========================================================
 
 CREATE OR REPLACE FUNCTION trgfn_prevent_modify_final_repair_order()
@@ -481,8 +477,141 @@ BEFORE UPDATE OR DELETE ON repair_order
 FOR EACH ROW
 EXECUTE FUNCTION trgfn_prevent_modify_final_repair_order();
 
+
 -- =========================================================
--- ТРИГГЕР 8. PAYMENT = immutable: после вставки запись нельзя менять или удалять
+-- ТРИГГЕР 6. Проверка начального статуса заказа
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION trgfn_validate_initial_repair_order_status()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_status_name VARCHAR(50);
+BEGIN
+    SELECT status_name
+    INTO v_status_name
+    FROM order_status
+    WHERE status_id = NEW.status_id;
+
+    IF v_status_name IS NULL THEN
+        RAISE EXCEPTION 'Unknown initial repair order status id: %', NEW.status_id;
+    END IF;
+
+    IF v_status_name <> 'Created' THEN
+        RAISE EXCEPTION 'Initial repair order status must be Created, actual status is %', v_status_name;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_validate_initial_repair_order_status
+BEFORE INSERT ON repair_order
+FOR EACH ROW
+EXECUTE FUNCTION trgfn_validate_initial_repair_order_status();
+
+
+-- =========================================================
+-- ТРИГГЕР 7. Проверка допустимых переходов статуса заказа
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION trgfn_validate_repair_order_status_transition()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_old_status VARCHAR(50);
+    v_new_status VARCHAR(50);
+    v_paid_amount NUMERIC(10,2);
+BEGIN
+    IF NEW.status_id = OLD.status_id THEN
+        RETURN NEW;
+    END IF;
+
+    SELECT status_name
+    INTO v_old_status
+    FROM order_status
+    WHERE status_id = OLD.status_id;
+
+    SELECT status_name
+    INTO v_new_status
+    FROM order_status
+    WHERE status_id = NEW.status_id;
+
+    IF v_old_status IS NULL OR v_new_status IS NULL THEN
+        RAISE EXCEPTION 'Unknown order status transition: % -> %', OLD.status_id, NEW.status_id;
+    END IF;
+
+    IF NOT (
+        (v_old_status = 'Created'  AND v_new_status IN ('Accepted', 'Canceled')) OR
+        (v_old_status = 'Accepted' AND v_new_status IN ('InRepair', 'Canceled')) OR
+        (v_old_status = 'InRepair' AND v_new_status IN ('Ready', 'Canceled')) OR
+        (v_old_status = 'Ready'    AND v_new_status IN ('Closed', 'Canceled'))
+    ) THEN
+        RAISE EXCEPTION 'Invalid repair order status transition: % -> %', v_old_status, v_new_status;
+    END IF;
+
+    IF v_new_status = 'Closed' AND NOT NEW.is_warranty_repair THEN
+        SELECT COALESCE(SUM(amount), 0)::NUMERIC(10,2)
+        INTO v_paid_amount
+        FROM payment
+        WHERE order_id = NEW.order_id;
+
+        IF v_paid_amount < NEW.total_cost THEN
+            RAISE EXCEPTION
+                'Cannot close non-warranty order %. Paid: %, total cost: %',
+                NEW.order_id, v_paid_amount, NEW.total_cost;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_validate_repair_order_status_transition
+BEFORE UPDATE OF status_id ON repair_order
+FOR EACH ROW
+EXECUTE FUNCTION trgfn_validate_repair_order_status_transition();
+
+
+-- =========================================================
+-- ТРИГГЕР 8. Запись истории статусов заказа
+-- =========================================================
+
+CREATE OR REPLACE FUNCTION trgfn_write_order_status_history()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO order_status_history (order_id, status_id, comment)
+        VALUES (NEW.order_id, NEW.status_id, 'Initial status');
+        RETURN NEW;
+    END IF;
+
+    IF TG_OP = 'UPDATE' AND NEW.status_id <> OLD.status_id THEN
+        INSERT INTO order_status_history (order_id, status_id)
+        VALUES (NEW.order_id, NEW.status_id);
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_write_initial_order_status_history
+AFTER INSERT ON repair_order
+FOR EACH ROW
+EXECUTE FUNCTION trgfn_write_order_status_history();
+
+CREATE TRIGGER trg_write_order_status_history_after_update
+AFTER UPDATE OF status_id ON repair_order
+FOR EACH ROW
+EXECUTE FUNCTION trgfn_write_order_status_history();
+
+
+-- =========================================================
+-- ТРИГГЕР 9. PAYMENT = immutable: после вставки запись нельзя менять или удалять
 -- =========================================================
 
 CREATE OR REPLACE FUNCTION trgfn_payment_no_update_delete()

@@ -22,6 +22,17 @@ CREATE TABLE device_type (
     type_name           VARCHAR(100) NOT NULL UNIQUE
 );
 
+INSERT INTO device_type (type_name)
+VALUES
+    ('Ноутбук'),
+    ('Смартфон'),
+    ('Планшет'),
+    ('Монитор'),
+    ('Принтер'),
+    ('Системный блок'),
+    ('Игровая приставка'),
+    ('Другое')
+ON CONFLICT (type_name) DO NOTHING;
 
 -- =========================================
 -- 3. DEVICE
@@ -94,16 +105,14 @@ ON CONFLICT (status_name) DO NOTHING;
 
 -- =========================================
 -- 6. REPAIR_ORDER
+-- Текущий статус хранится в status_id.
+-- Даты переходов между статусами хранятся в order_status_history.
 -- =========================================
 CREATE TABLE repair_order (
     order_id                 SERIAL PRIMARY KEY,
     order_number             VARCHAR(30) NOT NULL UNIQUE,
     device_id                INT NOT NULL,
     status_id                SMALLINT NOT NULL,
-    created_at               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    accepted_at              TIMESTAMP,
-    completed_at             TIMESTAMP,
-    issued_at                TIMESTAMP,
     warranty_months          SMALLINT CHECK (warranty_months >= 0),
     problem_description      TEXT NOT NULL,
     diagnostic_result        TEXT,
@@ -120,16 +129,7 @@ CREATE TABLE repair_order (
     CONSTRAINT fk_repair_order_status
         FOREIGN KEY (status_id)
         REFERENCES order_status(status_id)
-        ON DELETE RESTRICT,
-
-    CONSTRAINT chk_repair_order_dates
-        CHECK (
-            (accepted_at  IS NULL OR accepted_at  >= created_at) AND
-            (completed_at IS NULL OR completed_at >= created_at) AND
-            (issued_at    IS NULL OR issued_at    >= created_at) AND
-            (completed_at IS NULL OR accepted_at IS NULL OR completed_at >= accepted_at) AND
-            (issued_at    IS NULL OR completed_at IS NULL OR issued_at >= completed_at)
-        )
+        ON DELETE RESTRICT
 );
 
 CREATE INDEX idx_repair_order_device_id
@@ -138,16 +138,10 @@ CREATE INDEX idx_repair_order_device_id
 CREATE INDEX idx_repair_order_status_id
     ON repair_order(status_id);
 
-CREATE INDEX idx_repair_order_created_at
-    ON repair_order(created_at);
-
-CREATE INDEX idx_repair_order_status_created_at
-    ON repair_order(status_id, created_at);
-
-
 
 -- =========================================
 -- 7. ORDER_STATUS_HISTORY
+-- История изменения статусов заказа
 -- =========================================
 CREATE TABLE order_status_history (
     history_id           SERIAL PRIMARY KEY,
@@ -159,7 +153,7 @@ CREATE TABLE order_status_history (
     CONSTRAINT fk_order_status_history_order
         FOREIGN KEY (order_id)
         REFERENCES repair_order(order_id)
-        ON DELETE RESTRICT,
+        ON DELETE CASCADE,
 
     CONSTRAINT fk_order_status_history_status
         FOREIGN KEY (status_id)
@@ -172,6 +166,9 @@ CREATE INDEX idx_order_status_history_order_id
 
 CREATE INDEX idx_order_status_history_status_id
     ON order_status_history(status_id);
+
+CREATE INDEX idx_order_status_history_changed_at
+    ON order_status_history(changed_at);
 
 CREATE INDEX idx_order_status_history_order_changed_at
     ON order_status_history(order_id, changed_at);
@@ -242,7 +239,7 @@ CREATE TABLE part (
     part_number            VARCHAR(50) UNIQUE,
     part_name              VARCHAR(100) NOT NULL,
     manufacturer           VARCHAR(100),
-    default_price          NUMERIC(10,2) CHECK (default_price >= 0),
+    default_price          NUMERIC(10,2) NOT NULL CHECK (default_price >= 0),
     is_active              BOOLEAN NOT NULL DEFAULT TRUE,
     description            TEXT
 );
@@ -250,29 +247,34 @@ CREATE TABLE part (
 
 
 -- =========================================
--- 11. ORDER_PART
+-- 11. ORDER_SERVICE_PART
+-- Детали, использованные в рамках конкретной услуги заказа
 -- =========================================
-CREATE TABLE order_part (
+CREATE TABLE order_service_part (
     order_id             INT NOT NULL,
+    service_id           INT NOT NULL,
     part_id              INT NOT NULL,
     quantity             INT NOT NULL CHECK (quantity > 0),
     price_at_moment      NUMERIC(10,2) NOT NULL CHECK (price_at_moment >= 0),
 
-    PRIMARY KEY (order_id, part_id),
+    PRIMARY KEY (order_id, service_id, part_id),
 
-    CONSTRAINT fk_order_part_order
-        FOREIGN KEY (order_id)
-        REFERENCES repair_order(order_id)
+    CONSTRAINT fk_order_service_part_order_service
+        FOREIGN KEY (order_id, service_id)
+        REFERENCES order_service(order_id, service_id)
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_order_part_part
+    CONSTRAINT fk_order_service_part_part
         FOREIGN KEY (part_id)
         REFERENCES part(part_id)
         ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_order_part_part_id
-    ON order_part(part_id);
+CREATE INDEX idx_order_service_part_part_id
+    ON order_service_part(part_id);
+
+CREATE INDEX idx_order_service_part_order_service
+    ON order_service_part(order_id, service_id);
 
 
 -- =========================================
@@ -293,6 +295,7 @@ CREATE TABLE payment (
         REFERENCES repair_order(order_id)
         ON DELETE RESTRICT
 );
+
 CREATE UNIQUE INDEX ux_payment_transaction_number
     ON payment(transaction_number)
     WHERE transaction_number IS NOT NULL;
