@@ -30,6 +30,12 @@
             <a asp-page="/Technicians/Index">Мастера</a>
             <a asp-page="/Reports/Index">Отчёты</a>
         }
+        
+        @if (layoutUser.IsAdmin)
+        {
+            <a asp-page="/DeviceTypes/Index">Типы устройств</a>
+        }
+
 
         @if (layoutUser.CanShowMyWork)
         {

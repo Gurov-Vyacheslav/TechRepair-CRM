@@ -1,4 +1,5 @@
 ﻿using TechRepair_CRM.DTOs.Orders;
+using TechRepair_CRM.DTOs.Orders.Payments;
 using TechRepair_CRM.DTOs.Orders.Services;
 using TechRepair_CRM.DTOs.Orders.Services.Parts;
 
@@ -13,4 +14,6 @@ public interface IOrderQueryService
     Task<EditOrderServiceRequest?> GetOrderServiceEditFormAsync(int orderId, int serviceId);
 
     Task<EditOrderServicePartRequest?> GetOrderServicePartEditFormAsync(int orderId, int serviceId, int partId);
+    
+    Task<OrderPaymentSummaryResponse?> GetPaymentSummaryAsync(int orderId);
 }

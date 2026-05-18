@@ -1,0 +1,9 @@
+﻿@page
+@model TechRepair_CRM.Pages.DeviceTypes.CreateModel
+@{ ViewData["Title"] = "Добавить тип устройства"; }
+<h1>Добавить тип устройства</h1>
+<div class="form-page"><form method="post">
+    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+    <div class="form-field"><label asp-for="Input.TypeName" class="form-label"></label><input asp-for="Input.TypeName" class="form-control" /><span asp-validation-for="Input.TypeName" class="validation-message"></span></div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Добавить</button><a asp-page="/DeviceTypes/Index" class="btn btn-secondary">Назад</a></div>
+</form></div>

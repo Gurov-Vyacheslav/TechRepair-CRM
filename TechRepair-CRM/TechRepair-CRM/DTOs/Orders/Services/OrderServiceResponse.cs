@@ -6,6 +6,7 @@ public record OrderServiceResponse(
     int OrderId,
     int ServiceId,
     string ServiceName,
+    string? Description,
     int? TechnicianId,
     string? TechnicianFullName,
     short Quantity,

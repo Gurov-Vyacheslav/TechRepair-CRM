@@ -52,7 +52,7 @@ public class AddServicePartModel : PageModel
         try
         {
             await _orderCommandService.AddPartToOrderServiceAsync(orderId, serviceId, Input);
-            return RedirectToPage("/Orders/Details", new { id = orderId });
+            return RedirectToPage("/Orders/AddServicePart", new { orderId, serviceId });
         }
         catch (Exception ex)
         {

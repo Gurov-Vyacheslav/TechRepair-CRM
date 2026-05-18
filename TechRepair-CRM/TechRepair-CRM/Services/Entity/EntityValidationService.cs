@@ -140,5 +140,11 @@ public class EntityValidationService:IEntityValidationService
     {
         await GetTechnicianOrThrowAsync(technicianId, true);
     }
+    
+    public async Task<DeviceType> GetDeviceTypeOrThrowAsync(int id)
+    {
+        var deviceType = await _db.DeviceTypes.FindAsync(id);
+        return deviceType ?? throw new InvalidOperationException("Тип устройства не найден.");
+    }
 
 }

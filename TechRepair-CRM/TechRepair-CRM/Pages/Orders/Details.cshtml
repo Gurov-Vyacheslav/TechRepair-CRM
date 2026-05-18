@@ -63,6 +63,22 @@
         <th>Остаток</th>
         <td>@Model.Order.RemainingAmount</td>
     </tr>
+    <tr>
+        <th>Гарантийный ремонт</th>
+        <td>@(Model.Order.IsWarrantyRepair ? "Да" : "Нет")</td>
+    </tr>
+    <tr>
+        <th>Гарантия</th>
+        <td>@(Model.Order.WarrantyMonths?.ToString() ?? "—")</td>
+    </tr>
+    <tr>
+        <th>Предварительная стоимость</th>
+        <td>@Model.Order.EstimatedCost</td>
+    </tr>
+    <tr>
+        <th>Заметки</th>
+        <td>@Model.Order.Notes</td>
+    </tr>
 </table>
 
 @if (Model.Order.OrderStatus is not (OrderStatus.Closed or OrderStatus.Canceled) && canManageOrder)

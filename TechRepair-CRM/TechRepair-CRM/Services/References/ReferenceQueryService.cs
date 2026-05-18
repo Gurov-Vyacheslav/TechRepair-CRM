@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Data;
 using TechRepair_CRM.DTOs.References;
+using TechRepair_CRM.DTOs.References.DeviceTypes;
 using TechRepair_CRM.DTOs.References.Parts;
 using TechRepair_CRM.DTOs.References.Services;
 using TechRepair_CRM.DTOs.References.Technicians;
@@ -27,6 +28,7 @@ public class ReferenceQueryService : IReferenceQueryService
             .Select(s => new ServiceItemResponse(
                 s.ServiceId,
                 s.ServiceName,
+                s.Description,
                 s.BasePrice,
                 s.EstimatedDuration,
                 s.IsActive
@@ -185,4 +187,19 @@ public class ReferenceQueryService : IReferenceQueryService
             })
             .FirstOrDefaultAsync();
     }
+    
+    public async Task<IReadOnlyList<DeviceTypeItemResponse>> GetDeviceTypesAsync()
+    {
+        return await _db.DeviceTypes.OrderBy(t => t.TypeName)
+            .Select(t => new DeviceTypeItemResponse(t.DeviceTypeId, t.TypeName))
+            .ToListAsync();
+    }
+
+    public async Task<DeviceTypeFormRequest?> GetDeviceTypeFormAsync(int id)
+    {
+        return await _db.DeviceTypes.Where(t => t.DeviceTypeId == id)
+            .Select(t => new DeviceTypeFormRequest { TypeName = t.TypeName })
+            .FirstOrDefaultAsync();
+    }
+
 }

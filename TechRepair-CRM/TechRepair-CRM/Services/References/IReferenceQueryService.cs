@@ -1,4 +1,5 @@
 ﻿using TechRepair_CRM.DTOs.References;
+using TechRepair_CRM.DTOs.References.DeviceTypes;
 using TechRepair_CRM.DTOs.References.Parts;
 using TechRepair_CRM.DTOs.References.Services;
 using TechRepair_CRM.DTOs.References.Technicians;
@@ -15,4 +16,7 @@ public interface IReferenceQueryService
 
     Task<IReadOnlyList<TechnicianItemResponse>> GetTechniciansAsync(ReferenceFilterRequest? filter = null);
     Task<TechnicianFormRequest?> GetTechnicianFormAsync(int id);
+    
+    Task<IReadOnlyList<DeviceTypeItemResponse>> GetDeviceTypesAsync();
+    Task<DeviceTypeFormRequest?> GetDeviceTypeFormAsync(int id);
 }

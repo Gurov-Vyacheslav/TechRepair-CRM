@@ -1,4 +1,5 @@
-﻿using TechRepair_CRM.DTOs.References.Parts;
+﻿using TechRepair_CRM.DTOs.References.DeviceTypes;
+using TechRepair_CRM.DTOs.References.Parts;
 using TechRepair_CRM.DTOs.References.Services;
 using TechRepair_CRM.DTOs.References.Technicians;
 
@@ -14,4 +15,8 @@ public interface IReferenceCommandService
 
     Task<int> CreateTechnicianAsync(TechnicianFormRequest request);
     Task UpdateTechnicianAsync(int id, TechnicianFormRequest request);
+    
+    Task CreateDeviceTypeAsync(DeviceTypeFormRequest request);
+    Task UpdateDeviceTypeAsync(int id, DeviceTypeFormRequest request);
+    Task DeleteDeviceTypeAsync(int id);
 }

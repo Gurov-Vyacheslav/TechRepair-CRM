@@ -18,4 +18,5 @@ public interface IEntityValidationService
     Task<OrderServicePart> GetOrderServicePartOrThrowAsync(int orderId, int serviceId, int partId);
     Task<Technician> GetTechnicianOrThrowAsync(int id, bool isActive = false);
     Task EnsureActiveTechnicianExistsAsync(int technicianId);
+    Task<DeviceType> GetDeviceTypeOrThrowAsync(int id);
 }

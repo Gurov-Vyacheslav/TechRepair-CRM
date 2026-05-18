@@ -131,7 +131,7 @@ public class OrderCommandService : IOrderCommandService
         EnsureCurrentUserIsAdminOrManager();
         await _orderStatusService.EnsureOrderHasStatusToBeModifiedAsync(orderId);
         
-        await _entityValidationService.GetOrderServiceOrThrowAsync(orderId, serviceId);
+        await EnsureOrderServiceNotCompleted(orderId, serviceId);
         
         var existingOrderPart = await GetOrderServicePartAsync(orderId, serviceId, request.PartId);
 
@@ -157,6 +157,16 @@ public class OrderCommandService : IOrderCommandService
 
         await _db.SaveChangesAsync();
     }
+
+    private async Task EnsureOrderServiceNotCompleted(int orderId, int serviceId)
+    {
+        var orderService = await _entityValidationService
+            .GetOrderServiceOrThrowAsync(orderId, serviceId);
+
+        if (orderService.CompletedAt is not null)
+            throw new InvalidOperationException("Нельзя изменять детали завершённой услуги.");
+    }
+    
 
     private async Task<OrderServicePart?> GetOrderServicePartAsync(int orderId, int serviceId, int partId)
     {
@@ -209,7 +219,29 @@ public class OrderCommandService : IOrderCommandService
     public async Task AddPaymentAsync(int orderId, AddPaymentRequest request)
     {
         EnsureCurrentUserIsAdminOrManager();
-        await _entityValidationService.EnsureOrderExistsAsync(orderId);
+        
+        var paymentInfo = await _db.VwOrderFullInfos
+            .Where(o => o.OrderId == orderId)
+            .Select(o => new
+            {
+                TotalCost = o.TotalCost ?? 0,
+                PaidAmount = o.PaidAmount ?? 0,
+                RemainingAmount = o.RemainingAmount ?? 0
+            })
+            .SingleOrDefaultAsync();
+
+        if (paymentInfo is null)
+            throw new InvalidOperationException("Заказ не найден.");
+
+        if (request.Amount > paymentInfo.RemainingAmount)
+        {
+            throw new InvalidOperationException(
+                $"Сумма оплаты превышает остаток по заказу. Осталось оплатить: {paymentInfo.RemainingAmount}.");
+        }
+        
+        var transactionNumber = request.PaymentMethod == "Cash"
+            ? null
+            : request.TransactionNumber;
 
         var payment = new Payment
         {
@@ -217,7 +249,7 @@ public class OrderCommandService : IOrderCommandService
             PaymentDate = DateTime.Now,
             Amount = request.Amount,
             PaymentMethod = request.PaymentMethod,
-            TransactionNumber = request.TransactionNumber,
+            TransactionNumber = transactionNumber,
             Notes = request.Notes
         };
 
@@ -298,6 +330,8 @@ public class OrderCommandService : IOrderCommandService
     {
         EnsureCurrentUserIsAdminOrManager();
         await _orderStatusService.EnsureOrderHasStatusToBeModifiedAsync(orderId);
+        
+        await EnsureOrderServiceNotCompleted(orderId, serviceId);
 
         var orderPart = await _entityValidationService.GetOrderServicePartOrThrowAsync(orderId, serviceId, partId);
 

@@ -188,6 +188,7 @@ public class OrderQueryService : IOrderQueryService
                 os.OrderId,
                 os.ServiceId,
                 os.Service.ServiceName,
+                os.Service.Description,
                 os.TechnicianId,
                 os.Technician == null
                     ? null
@@ -275,6 +276,22 @@ public class OrderQueryService : IOrderQueryService
             {
                 Quantity = osp.Quantity
             })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<OrderPaymentSummaryResponse?> GetPaymentSummaryAsync(int orderId)
+    {
+        return await _db.VwOrderFullInfos
+            .Where(o => o.OrderId == orderId)
+            .Select(o => new OrderPaymentSummaryResponse(
+                o.OrderId!.Value,
+                o.OrderNumber!,
+                o.IsWarrantyRepair ?? false,
+                o.TotalCost ?? 0,
+                o.PaidAmount ?? 0,
+                o.RemainingAmount ?? 0,
+                o.RequiredToCloseAmount ?? 0
+            ))
             .FirstOrDefaultAsync();
     }
 }

@@ -45,6 +45,7 @@ else
         <thead>
         <tr>
             <th>Название</th>
+            <th>Описание</th>
             <th>Цена</th>
             <th>Длительность</th>
             <th>Активна</th>
@@ -56,6 +57,7 @@ else
         {
             <tr>
                 <td>@service.ServiceName</td>
+                <td>@service.Description</td>
                 <td>@service.BasePrice</td>
                 <td>@service.EstimatedDuration</td>
                 <td>@(service.IsActive ? "Да" : "Нет")</td>

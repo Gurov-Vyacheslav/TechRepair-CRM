@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TechRepair_CRM.Data;
+using TechRepair_CRM.DTOs.References.DeviceTypes;
 using TechRepair_CRM.DTOs.References.Parts;
 using TechRepair_CRM.DTOs.References.Services;
 using TechRepair_CRM.DTOs.References.Technicians;
@@ -174,4 +175,52 @@ public class ReferenceCommandService : IReferenceCommandService
 
         await _db.SaveChangesAsync();
     }
+    
+    public async Task CreateDeviceTypeAsync(DeviceTypeFormRequest request)
+    {
+        await EnsureDeviceTypeNameIsUniqueAsync(request.TypeName);
+        
+        var deviceType = new DeviceType { TypeName = request.TypeName.Trim() };
+        
+        _db.DeviceTypes.Add(deviceType);
+        await _db.SaveChangesAsync();
+    }
+    
+    private async Task EnsureDeviceTypeNameIsUniqueAsync(string typeName, int exceptId = 0)
+    {
+        var normalizedTypeName = typeName.Trim();
+        
+        var exists = await _db.DeviceTypes.AnyAsync(t => 
+            t.TypeName == normalizedTypeName && t.DeviceTypeId != exceptId);
+        
+        if (exists) throw new InvalidOperationException("Тип устройства с таким названием уже существует.");
+    }
+
+    public async Task UpdateDeviceTypeAsync(int id, DeviceTypeFormRequest request)
+    {
+        var deviceType = await _entityValidationService.GetDeviceTypeOrThrowAsync(id);
+        
+        await EnsureDeviceTypeNameIsUniqueAsync(request.TypeName, id);
+        
+        deviceType.TypeName = request.TypeName.Trim();
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeleteDeviceTypeAsync(int id)
+    {
+        var deviceType = await _entityValidationService.GetDeviceTypeOrThrowAsync(id);
+        
+        await EnsureDeviceTypeIsNotUsedAsync(id);
+        
+        _db.DeviceTypes.Remove(deviceType);
+        await _db.SaveChangesAsync();
+    }
+    
+    private async Task EnsureDeviceTypeIsNotUsedAsync(int id)
+    {
+        var isUsed = await _db.Devices.AnyAsync(d => d.DeviceTypeId == id);
+        if (isUsed) 
+            throw new InvalidOperationException("Нельзя удалить тип устройства, который используется устройствами.");
+    }
+
 }

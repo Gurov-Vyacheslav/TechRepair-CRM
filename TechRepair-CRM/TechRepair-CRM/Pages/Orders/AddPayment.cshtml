@@ -7,41 +7,72 @@
 
 <h1>Добавить оплату</h1>
 
+<div class="info-card">
+    <h3>Финансы заказа @Model.Summary.OrderNumber</h3>
+    <table>
+        <tr><th>Гарантийный ремонт</th><td>@(Model.Summary.IsWarrantyRepair ? "Да" : "Нет")</td></tr>
+        <tr><th>Итого по заказу</th><td>@Model.Summary.TotalCost</td></tr>
+        <tr><th>Уже оплачено</th><td>@Model.Summary.PaidAmount</td></tr>
+        <tr><th>Осталось оплатить</th><td>@Model.Summary.RemainingAmount</td></tr>
+        <tr><th>Требуется для закрытия</th><td>@Model.Summary.RequiredToCloseAmount</td></tr>
+    </table>
+</div>
+
 <div class="form-page">
     <form method="post">
         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
-
         <div class="form-field">
             <label asp-for="Input.Amount" class="form-label"></label>
             <input asp-for="Input.Amount" class="form-control form-control-sm" />
             <span asp-validation-for="Input.Amount" class="validation-message"></span>
         </div>
-
         <div class="form-field">
             <label asp-for="Input.PaymentMethod" class="form-label"></label>
-            <select asp-for="Input.PaymentMethod" class="form-control">
+            <select asp-for="Input.PaymentMethod" class="form-control" id="paymentMethodSelect">
+                <option value="">Выберите способ оплаты</option>
                 <option value="Cash">Наличные</option>
                 <option value="Card">Карта</option>
                 <option value="Transfer">Перевод</option>
             </select>
             <span asp-validation-for="Input.PaymentMethod" class="validation-message"></span>
         </div>
-
-        <div class="form-field">
+        <div class="form-field" id="transactionNumberField">
             <label asp-for="Input.TransactionNumber" class="form-label"></label>
-            <input asp-for="Input.TransactionNumber" class="form-control" />
+            <input asp-for="Input.TransactionNumber" class="form-control" id="transactionNumberInput" />
             <span asp-validation-for="Input.TransactionNumber" class="validation-message"></span>
         </div>
-
         <div class="form-field">
             <label asp-for="Input.Notes" class="form-label"></label>
             <textarea asp-for="Input.Notes" class="form-control"></textarea>
             <span asp-validation-for="Input.Notes" class="validation-message"></span>
         </div>
-
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Добавить оплату</button>
             <a asp-page="/Orders/Details" asp-route-id="@Model.OrderId" class="btn btn-secondary">Назад</a>
         </div>
     </form>
 </div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+            const transactionNumberField = document.getElementById('transactionNumberField');
+            const transactionNumberInput = document.getElementById('transactionNumberInput');
+
+            function syncTransactionNumberField() {
+                const isCash = paymentMethodSelect.value === 'Cash';
+
+                transactionNumberField.style.display = isCash ? 'none' : '';
+                
+                if (isCash) {
+                    transactionNumberInput.value = '';
+                }
+            }
+
+            paymentMethodSelect.addEventListener('change', syncTransactionNumberField);
+
+            syncTransactionNumberField();
+        })();
+    </script>
+}
