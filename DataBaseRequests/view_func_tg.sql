@@ -117,23 +117,43 @@ LEFT JOIN vw_order_cost_breakdown cb ON cb.order_id = ro.order_id
 LEFT JOIN vw_order_payments op ON op.order_id = ro.order_id;
 
 
-CREATE OR REPLACE VIEW vw_technician_workload AS
+CREATE VIEW vw_technician_workload AS
 SELECT
     t.technician_id,
     t.first_name,
     t.last_name,
     t.specialization,
     t.is_active,
-    COUNT(os.order_id) AS assigned_services_count,
-    COUNT(os.order_id) FILTER (WHERE os.completed_at IS NOT NULL) AS completed_services_count,
-    COALESCE(SUM(os.quantity), 0) AS total_service_quantity,
-    COALESCE(SUM(os.quantity * os.price_at_moment), 0)::NUMERIC(10,2) AS total_service_amount,
+
+    COUNT(os.order_id) AS assigned_service_rows_count,
+
+    COALESCE(SUM(os.quantity), 0) AS assigned_service_quantity,
+
+    COALESCE(
+        SUM(os.quantity) FILTER (WHERE os.completed_at IS NOT NULL),
+        0
+    ) AS completed_service_quantity,
+
+    COALESCE(
+        SUM(os.quantity * os.price_at_moment),
+        0
+    )::NUMERIC(10,2) AS assigned_service_amount,
+
+    COALESCE(
+        SUM(os.quantity * os.price_at_moment) FILTER (WHERE os.completed_at IS NOT NULL),
+        0
+    )::NUMERIC(10,2) AS completed_service_amount,
+
     MIN(os.completed_at) AS first_completed_at,
     MAX(os.completed_at) AS last_completed_at
 FROM technician t
 LEFT JOIN order_service os ON os.technician_id = t.technician_id
 GROUP BY
-    t.technician_id, t.first_name, t.last_name, t.specialization, t.is_active;
+    t.technician_id,
+    t.first_name,
+    t.last_name,
+    t.specialization,
+    t.is_active;
 
 
 CREATE OR REPLACE VIEW vw_service_statistics AS
