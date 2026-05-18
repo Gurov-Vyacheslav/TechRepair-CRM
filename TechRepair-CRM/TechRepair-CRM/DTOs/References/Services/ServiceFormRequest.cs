@@ -4,18 +4,19 @@ namespace TechRepair_CRM.DTOs.References.Services;
 
 public record ServiceFormRequest
 {
-    [Required]
+    [Required(ErrorMessage = "Название услуги обязательно.")]
     [Display(Name = "Название услуги")]
     public string ServiceName { get; set; } = string.Empty;
 
     [Display(Name = "Описание")]
     public string? Description { get; set; }
 
-    [Required]
-    [Range(0, double.MaxValue)]
+    [Required(ErrorMessage = "Базовая цена обязательна.")]
+    [Range(0, double.MaxValue, ErrorMessage = "Базовая цена не может быть отрицательной.")]
     [Display(Name = "Базовая цена")]
     public decimal BasePrice { get; set; }
 
+    [Range(0, int.MaxValue, ErrorMessage = "Оценочная длительность не может быть отрицательной.")]
     [Display(Name = "Оценочная длительность, минут")]
     public int? EstimatedDuration { get; set; }
 

@@ -4,20 +4,20 @@ namespace TechRepair_CRM.DTOs.References.Technicians;
 
 public record TechnicianFormRequest
 {
-    [Required]
+    [Required(ErrorMessage = "Имя обязательно.")]
     [Display(Name = "Имя")]
     public string FirstName { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Фамилия обязательна.")]
     [Display(Name = "Фамилия")]
     public string LastName { get; set; } = string.Empty;
 
-    [Required]
-    [EmailAddress]
+    [Required(ErrorMessage = "Email обязателен.")]
+    [EmailAddress(ErrorMessage = "Введите корректный email.")]
     [Display(Name = "Email")]
     public string Email { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Телефон обязателен.")]
     [Display(Name = "Телефон")]
     public string Phone { get; set; } = string.Empty;
 

@@ -4,12 +4,12 @@ namespace TechRepair_CRM.DTOs.Orders.Services;
 
 public record AddOrderServiceRequest
 {
-    [Required]
+    [Required(ErrorMessage = "Выберите услугу.")]
     [Display(Name = "Услуга")]
-    public int ServiceId { get; set; }
+    public int? ServiceId { get; set; }
 
-    [Required]
-    [Range(1, short.MaxValue)]
+    [Required(ErrorMessage = "Количество обязательно.")]
+    [Range(1, short.MaxValue, ErrorMessage = "Количество должно быть больше 0.")]
     [Display(Name = "Количество")]
     public short Quantity { get; set; } = 1;
 

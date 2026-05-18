@@ -42,12 +42,33 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
-builder.Services.AddRazorPages(options =>
-{
-    options.Conventions.AuthorizeFolder("/Orders");
-    options.Conventions.AllowAnonymousToPage("/Account/Login");
-    options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
-});
+builder.Services
+    .AddRazorPages(options =>
+    {
+        options.Conventions.AuthorizeFolder("/Orders");
+        options.Conventions.AllowAnonymousToPage("/Account/Login");
+        options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
+    })
+    .AddMvcOptions(options =>
+    {
+        var messages = options.ModelBindingMessageProvider;
+
+        messages.SetValueMustNotBeNullAccessor(_ => "Поле обязательно.");
+        messages.SetAttemptedValueIsInvalidAccessor((value, fieldName) =>
+            $"Значение «{value}» недопустимо для поля «{fieldName}».");
+        messages.SetMissingBindRequiredValueAccessor(fieldName =>
+            $"Поле «{fieldName}» обязательно.");
+        messages.SetMissingKeyOrValueAccessor(() =>
+            "Не указано значение.");
+        messages.SetUnknownValueIsInvalidAccessor(fieldName =>
+            $"Недопустимое значение для поля «{fieldName}».");
+        messages.SetValueIsInvalidAccessor(value =>
+            $"Значение «{value}» недопустимо.");
+        messages.SetNonPropertyAttemptedValueIsInvalidAccessor(value =>
+            $"Значение «{value}» недопустимо.");
+        messages.SetNonPropertyUnknownValueIsInvalidAccessor(() =>
+            "Недопустимое значение.");
+    });
 
 builder.Services.AddAuthorization();
 
@@ -74,6 +95,7 @@ builder.Services.AddScoped<IUserAdminService, UserAdminService>();
 
 builder.Services.AddScoped<IDeviceQueryService, DeviceQueryService>();
 builder.Services.AddScoped<IDeviceCommandService, DeviceCommandService>();
+builder.Services.AddScoped<IDeviceValidationService, DeviceValidationService>();
 
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<ITechnicianWorkService, TechnicianWorkService>();

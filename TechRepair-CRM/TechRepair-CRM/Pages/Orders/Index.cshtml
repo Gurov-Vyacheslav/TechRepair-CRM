@@ -75,6 +75,7 @@ else
             <th>Клиент</th>
             <th>Телефон</th>
             <th>Устройство</th>
+            <th>Гарантия</th>
             <th>Стоимость</th>
             <th>Оплачено</th>
             <th>Остаток</th>
@@ -91,6 +92,7 @@ else
                 <td>@order.ClientFullName</td>
                 <td>@order.ClientPhone</td>
                 <td>@order.DeviceType @order.Brand @order.Model</td>
+                <td>@(order.IsWarrantyRepair ? "Да" : "Нет")</td>
                 <td>@order.TotalCost</td>
                 <td>@order.PaidAmount</td>
                 <td>@order.RemainingAmount</td>

@@ -29,19 +29,23 @@ public class EditModel : PageModel
     public async Task<IActionResult> OnGetAsync(string id)
     {
         var user = await _userAdminService.GetUserForEditAsync(id);
+
         if (user is null)
             return NotFound();
 
         Input = user;
-        await LoadSelectListsAsync();
+        await LoadSelectListsAsync(id);
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(string id)
     {
+        Input.Id = id;
+
         if (!ModelState.IsValid)
         {
-            await LoadSelectListsAsync();
+            await LoadSelectListsAsync(id);
             return Page();
         }
 
@@ -53,12 +57,12 @@ public class EditModel : PageModel
         catch (Exception ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
-            await LoadSelectListsAsync();
+            await LoadSelectListsAsync(id);
             return Page();
         }
     }
 
-    private async Task LoadSelectListsAsync()
+    private async Task LoadSelectListsAsync(string userId)
     {
         var roles = await _userAdminService.GetRolesAsync();
 
@@ -70,6 +74,6 @@ public class EditModel : PageModel
             })
             .ToList();
 
-        Technicians = await _userAdminService.GetTechnicianOptionsAsync();
+        Technicians = await _userAdminService.GetAvailableTechnicianOptionsForEditAsync(userId);
     }
 }

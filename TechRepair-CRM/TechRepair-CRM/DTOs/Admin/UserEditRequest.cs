@@ -6,18 +6,18 @@ public record UserEditRequest
 {
     public string Id { get; set; } = string.Empty;
 
-    [Required]
-    [EmailAddress]
+    [Required(ErrorMessage = "Email обязателен.")]
+    [EmailAddress(ErrorMessage = "Введите корректный email.")]
     [Display(Name = "Email")]
     public string Email { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Выберите роль.")]
     [Display(Name = "Роль")]
     public string Role { get; set; } = string.Empty;
 
     [Display(Name = "Мастер")]
     public int? TechnicianId { get; set; }
 
-    [Display(Name = "Активен")]
-    public bool IsActive { get; set; } = true;
+    [Display(Name = "Заблокирован")]
+    public bool IsBlocked { get; set; }
 }

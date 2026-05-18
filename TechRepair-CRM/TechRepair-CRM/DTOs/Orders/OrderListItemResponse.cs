@@ -10,6 +10,7 @@ public record OrderListItemResponse(
     string DeviceType,
     string? Brand,
     string? Model,
+    bool IsWarrantyRepair,
     decimal TotalCost,
     decimal PaidAmount,
     decimal RemainingAmount

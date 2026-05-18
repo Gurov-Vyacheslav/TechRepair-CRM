@@ -33,8 +33,8 @@
             </div>
 
             <div class="form-field">
-                <label asp-for="Filter.IsLocked" class="form-label">Статус</label>
-                <select asp-for="Filter.IsLocked" class="form-control">
+                <label asp-for="Filter.IsBlocked" class="form-label">Статус</label>
+                <select asp-for="Filter.IsBlocked" class="form-control">
                     <option value="">Все</option>
                     <option value="false">Активные</option>
                     <option value="true">Заблокированные</option>
@@ -61,7 +61,7 @@ else
             <th>Email</th>
             <th>Роль</th>
             <th>Мастер</th>
-            <th>Активен</th>
+            <th>Статус</th>
             <th>Действия</th>
         </tr>
         </thead>
@@ -85,7 +85,7 @@ else
                         <span>—</span>
                     }
                 </td>
-                <td>@(user.IsActive ? "Да" : "Нет")</td>
+                <td>@(user.IsBlocked ? "Заблокирован" : "Активен")</td>
                 <td>
                     <a asp-page="/Admin/Users/Edit"
                        asp-route-id="@user.Id"

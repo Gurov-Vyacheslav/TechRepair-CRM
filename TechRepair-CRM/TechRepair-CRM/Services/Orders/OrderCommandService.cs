@@ -13,13 +13,13 @@ namespace TechRepair_CRM.Services.Orders;
 public class OrderCommandService : IOrderCommandService
 {
     private readonly RepairServiceDbContext _db;
-    private readonly IOrderStatusService  _orderStatusService;
+    private readonly IOrderStatusService _orderStatusService;
     private readonly ICurrentUserService _currentUserService;
     private readonly IEntityValidationService _entityValidationService;
 
     public OrderCommandService(
         RepairServiceDbContext db,
-        IOrderStatusService  orderStatusService,
+        IOrderStatusService orderStatusService,
         ICurrentUserService currentUserService,
         IEntityValidationService entityValidationService)
     {
@@ -31,17 +31,23 @@ public class OrderCommandService : IOrderCommandService
 
     public async Task<int> CreateOrderAsync(CreateOrderRequest request)
     {
-        await _entityValidationService.EnsureDeviceExistsAsync(request.DeviceId);
+        EnsureCurrentUserIsAdminOrManager();
+
+        if (request.DeviceId is null)
+            throw new InvalidOperationException("Выберите устройство.");
+
+        EnsureOrderValuesAreValid(request.EstimatedCost, request.WarrantyMonths);
+
+        await _entityValidationService.EnsureDeviceExistsAsync(request.DeviceId.Value);
 
         var createdStatusId = await _orderStatusService.GetCreatedStatusIdAsync();
-
         var orderId = await GetNextOrderIdAsync();
 
         var order = new RepairOrder
         {
             OrderId = orderId,
             OrderNumber = $"RO-{DateTime.Today:yyyyMMdd}-{orderId:D6}",
-            DeviceId = request.DeviceId,
+            DeviceId = request.DeviceId.Value,
             StatusId = createdStatusId,
             ProblemDescription = request.ProblemDescription,
             DiagnosticResult = request.DiagnosticResult,
@@ -57,7 +63,7 @@ public class OrderCommandService : IOrderCommandService
 
         return order.OrderId;
     }
-    
+
     private async Task<int> GetNextOrderIdAsync()
     {
         var connection = _db.Database.GetDbConnection();
@@ -72,10 +78,12 @@ public class OrderCommandService : IOrderCommandService
 
         return Convert.ToInt32(result);
     }
-    
+
     public async Task UpdateOrderAsync(int orderId, OrderEditRequest request)
     {
         EnsureCurrentUserIsAdminOrManager();
+        EnsureOrderValuesAreValid(request.EstimatedCost, request.WarrantyMonths);
+
         await _orderStatusService.EnsureOrderHasStatusToBeModifiedAsync(orderId);
 
         var order = await _entityValidationService.GetOrderOrThrowAsync(orderId);
@@ -89,7 +97,16 @@ public class OrderCommandService : IOrderCommandService
 
         await _db.SaveChangesAsync();
     }
-    
+
+    private static void EnsureOrderValuesAreValid(decimal estimatedCost, short? warrantyMonths)
+    {
+        if (estimatedCost < 0)
+            throw new InvalidOperationException("Предварительная стоимость не может быть отрицательной.");
+
+        if (warrantyMonths < 0)
+            throw new InvalidOperationException("Количество месяцев гарантии не может быть отрицательным.");
+    }
+
     private void EnsureCurrentUserIsAdminOrManager()
     {
         if (!_currentUserService.IsAdminOrManager())
@@ -99,10 +116,14 @@ public class OrderCommandService : IOrderCommandService
     public async Task AddServiceToOrderAsync(int orderId, AddOrderServiceRequest request)
     {
         EnsureCurrentUserIsAdminOrManager();
-        await _orderStatusService.EnsureOrderHasStatusToBeModifiedAsync(orderId);
-        await _entityValidationService.EnsureOrderServiceNotExistsAsync(orderId, request.ServiceId);
 
-        var service = await _entityValidationService.GetServiceOrThrowAsync(request.ServiceId, true);
+        if (request.ServiceId is null)
+            throw new InvalidOperationException("Выберите услугу.");
+
+        await _orderStatusService.EnsureOrderHasStatusToBeModifiedAsync(orderId);
+        await _entityValidationService.EnsureOrderServiceNotExistsAsync(orderId, request.ServiceId.Value);
+
+        var service = await _entityValidationService.GetServiceOrThrowAsync(request.ServiceId.Value, true);
 
         if (request.TechnicianId.HasValue)
         {
@@ -112,7 +133,7 @@ public class OrderCommandService : IOrderCommandService
         var orderService = new OrderService
         {
             OrderId = orderId,
-            ServiceId = request.ServiceId,
+            ServiceId = request.ServiceId.Value,
             TechnicianId = request.TechnicianId,
             Quantity = request.Quantity,
             PriceAtMoment = service.BasePrice,
@@ -122,18 +143,21 @@ public class OrderCommandService : IOrderCommandService
         _db.OrderServices.Add(orderService);
         await _db.SaveChangesAsync();
     }
-    
+
     public async Task AddPartToOrderServiceAsync(
         int orderId,
         int serviceId,
         AddOrderServicePartRequest request)
     {
         EnsureCurrentUserIsAdminOrManager();
+
+        if (request.PartId is null)
+            throw new InvalidOperationException("Выберите деталь.");
+
         await _orderStatusService.EnsureOrderHasStatusToBeModifiedAsync(orderId);
-        
         await EnsureOrderServiceNotCompleted(orderId, serviceId);
-        
-        var existingOrderPart = await GetOrderServicePartAsync(orderId, serviceId, request.PartId);
+
+        var existingOrderPart = await GetOrderServicePartAsync(orderId, serviceId, request.PartId.Value);
 
         if (existingOrderPart is not null)
         {
@@ -141,13 +165,13 @@ public class OrderCommandService : IOrderCommandService
         }
         else
         {
-            var part = await _entityValidationService.GetPartOrThrowAsync(request.PartId, true);
-            
+            var part = await _entityValidationService.GetPartOrThrowAsync(request.PartId.Value, true);
+
             var orderServicePart = new OrderServicePart
             {
                 OrderId = orderId,
                 ServiceId = serviceId,
-                PartId = request.PartId,
+                PartId = request.PartId.Value,
                 Quantity = request.Quantity,
                 PriceAtMoment = part.DefaultPrice
             };
@@ -166,7 +190,6 @@ public class OrderCommandService : IOrderCommandService
         if (orderService.CompletedAt is not null)
             throw new InvalidOperationException("Нельзя изменять детали завершённой услуги.");
     }
-    
 
     private async Task<OrderServicePart?> GetOrderServicePartAsync(int orderId, int serviceId, int partId)
     {
@@ -176,7 +199,6 @@ public class OrderCommandService : IOrderCommandService
                 osp.ServiceId == serviceId &&
                 osp.PartId == partId);
     }
-    
 
     public async Task CompleteServiceAsync(int orderId, int serviceId)
     {
@@ -192,7 +214,7 @@ public class OrderCommandService : IOrderCommandService
 
         await _db.SaveChangesAsync();
     }
-    
+
     private async Task EnsureCurrentUserCanCompleteServiceAsync(int orderId, int serviceId)
     {
         if (_currentUserService.IsAdminOrManager())
@@ -214,12 +236,11 @@ public class OrderCommandService : IOrderCommandService
         if (!isAssigned)
             throw new InvalidOperationException("Нельзя завершить услугу, которая не назначена текущему мастеру.");
     }
-    
 
     public async Task AddPaymentAsync(int orderId, AddPaymentRequest request)
     {
         EnsureCurrentUserIsAdminOrManager();
-        
+
         var paymentInfo = await _db.VwOrderFullInfos
             .Where(o => o.OrderId == orderId)
             .Select(o => new
@@ -238,7 +259,7 @@ public class OrderCommandService : IOrderCommandService
             throw new InvalidOperationException(
                 $"Сумма оплаты превышает остаток по заказу. Осталось оплатить: {paymentInfo.RemainingAmount}.");
         }
-        
+
         var transactionNumber = request.PaymentMethod == "Cash"
             ? null
             : request.TransactionNumber;
@@ -277,7 +298,7 @@ public class OrderCommandService : IOrderCommandService
         await using var transaction = await _db.Database.BeginTransactionAsync();
 
         order.StatusId = newStatusEntity.StatusId;
-        
+
         await _db.SaveChangesAsync();
 
         await TryAddCommentToLastHistoryAsync(orderId, comment);
@@ -302,7 +323,7 @@ public class OrderCommandService : IOrderCommandService
         lastHistory.Comment = comment;
         await _db.SaveChangesAsync();
     }
-    
+
     public async Task UpdateOrderServiceAsync(int orderId, int serviceId, EditOrderServiceRequest request)
     {
         EnsureCurrentUserIsAdminOrManager();
@@ -330,7 +351,7 @@ public class OrderCommandService : IOrderCommandService
     {
         EnsureCurrentUserIsAdminOrManager();
         await _orderStatusService.EnsureOrderHasStatusToBeModifiedAsync(orderId);
-        
+
         await EnsureOrderServiceNotCompleted(orderId, serviceId);
 
         var orderPart = await _entityValidationService.GetOrderServicePartOrThrowAsync(orderId, serviceId, partId);
@@ -339,5 +360,4 @@ public class OrderCommandService : IOrderCommandService
 
         await _db.SaveChangesAsync();
     }
-
 }

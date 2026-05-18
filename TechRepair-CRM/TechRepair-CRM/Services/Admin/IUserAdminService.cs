@@ -11,5 +11,6 @@ public interface IUserAdminService
     Task<IReadOnlyList<string>> GetRolesAsync();
     Task<string?> GetTechnicianEmailAsync(int technicianId);
     Task<IReadOnlyList<TechnicianUserOptionResponse>> GetTechnicianOptionsAsync();
+    Task<IReadOnlyList<TechnicianUserOptionResponse>> GetAvailableTechnicianOptionsForEditAsync(string userId);
     Task<IReadOnlyList<TechnicianUserOptionResponse>> GetAvailableTechnicianOptionsForCreateAsync();
 }

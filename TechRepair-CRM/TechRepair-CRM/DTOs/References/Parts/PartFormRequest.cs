@@ -7,14 +7,15 @@ public record PartFormRequest
     [Display(Name = "Артикул")]
     public string? PartNumber { get; set; }
 
-    [Required]
+    [Required(ErrorMessage = "Название детали обязательно.")]
     [Display(Name = "Название детали")]
     public string PartName { get; set; } = string.Empty;
 
     [Display(Name = "Производитель")]
     public string? Manufacturer { get; set; }
 
-    [Range(0, double.MaxValue)]
+    [Required(ErrorMessage = "Текущая цена обязательна.")]
+    [Range(0, double.MaxValue, ErrorMessage = "Текущая цена не может быть отрицательной.")]
     [Display(Name = "Текущая цена")]
     public decimal DefaultPrice { get; set; }
 

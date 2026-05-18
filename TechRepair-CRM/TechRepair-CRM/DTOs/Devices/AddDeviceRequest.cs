@@ -4,9 +4,9 @@ namespace TechRepair_CRM.DTOs.Devices;
 
 public record AddDeviceRequest
 {
-    [Required]
+    [Required(ErrorMessage = "Выберите тип устройства.")]
     [Display(Name = "Тип устройства")]
-    public int DeviceTypeId { get; set; }
+    public int? DeviceTypeId { get; set; }
 
     [Display(Name = "Бренд")]
     public string? Brand { get; set; }

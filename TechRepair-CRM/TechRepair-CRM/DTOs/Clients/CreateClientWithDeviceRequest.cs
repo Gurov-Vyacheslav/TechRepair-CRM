@@ -4,28 +4,28 @@ namespace TechRepair_CRM.DTOs.Clients;
 
 public record CreateClientWithDeviceRequest
 {
-    [Required]
+    [Required(ErrorMessage = "Имя обязательно.")]
     [Display(Name = "Имя")]
     public string FirstName { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Фамилия обязательна.")]
     [Display(Name = "Фамилия")]
     public string LastName { get; set; } = string.Empty;
 
-    [Required]
+    [Required(ErrorMessage = "Телефон обязателен.")]
     [Display(Name = "Телефон")]
     public string Phone { get; set; } = string.Empty;
 
-    [EmailAddress]
+    [EmailAddress(ErrorMessage = "Введите корректный email.")]
     [Display(Name = "Email")]
     public string? Email { get; set; }
 
     [Display(Name = "Адрес")]
     public string? Address { get; set; }
 
-    [Required]
+    [Required(ErrorMessage = "Выберите тип устройства.")]
     [Display(Name = "Тип устройства")]
-    public int DeviceTypeId { get; set; }
+    public int? DeviceTypeId { get; set; }
 
     [Display(Name = "Бренд")]
     public string? Brand { get; set; }

@@ -2,7 +2,7 @@
 @model TechRepair_CRM.Pages.Admin.Users.EditModel
 
 @{
-    ViewData["Title"] = "Изменить пользователя";
+ViewData["Title"] = "Изменить пользователя";
 }
 
 <h1>Изменить пользователя</h1>
@@ -16,7 +16,7 @@
             <input asp-for="Input.Email" class="form-control" id="emailInput" />
             <span asp-validation-for="Input.Email" class="validation-message"></span>
             <small id="emailHint">
-                Для роли Technician email будет взят из карточки выбранного мастера.
+                Если выбран мастер, email будет взят из его карточки.
             </small>
         </div>
 
@@ -36,10 +36,10 @@
 
                 @foreach (var technician in Model.Technicians)
                 {
-                    <option value="@technician.TechnicianId"
-                            data-email="@technician.Email">
-                        @technician.FullName — @technician.Email
-                    </option>
+                <option value="@technician.TechnicianId"
+                        data-email="@technician.Email">
+                    @technician.FullName — @technician.Email
+                </option>
                 }
             </select>
 
@@ -47,8 +47,8 @@
         </div>
 
         <div class="checkbox-field">
-            <input asp-for="Input.IsActive" />
-            <label asp-for="Input.IsActive"></label>
+            <input asp-for="Input.IsBlocked" />
+            <label asp-for="Input.IsBlocked">Заблокирован</label>
         </div>
 
         <div class="form-actions">
@@ -56,11 +56,11 @@
 
             @if (Model.Input.TechnicianId is not null)
             {
-                <a asp-page="/Technicians/Details"
-                   asp-route-id="@Model.Input.TechnicianId.Value"
-                   class="btn btn-secondary">
-                    Открыть мастера
-                </a>
+            <a asp-page="/Technicians/Details"
+               asp-route-id="@Model.Input.TechnicianId.Value"
+               class="btn btn-secondary">
+                Открыть мастера
+            </a>
             }
 
             <a asp-page="/Admin/Users/Index" class="btn btn-secondary">Назад</a>
@@ -69,29 +69,29 @@
 </div>
 
 @section Scripts {
-    <script>
-        (function () {
-            const technicianSelect = document.getElementById('technicianSelect');
-            const emailInput = document.getElementById('emailInput');
-            const emailHint = document.getElementById('emailHint');
+<script>
+    (function () {
+        const technicianSelect = document.getElementById('technicianSelect');
+        const emailInput = document.getElementById('emailInput');
+        const emailHint = document.getElementById('emailHint');
 
-            function syncTechnicianEmail() {
-                const selectedOption = technicianSelect.options[technicianSelect.selectedIndex];
-                const technicianEmail = selectedOption?.dataset.email || '';
+        function syncTechnicianEmail() {
+            const selectedOption = technicianSelect.options[technicianSelect.selectedIndex];
+            const technicianEmail = selectedOption?.dataset.email || '';
 
-                if (technicianSelect.value) {
-                    emailInput.value = technicianEmail;
-                    emailInput.readOnly = true;
-                    emailHint.textContent = 'Email заблокирован, потому что берётся из карточки выбранного мастера.';
-                } else {
-                    emailInput.readOnly = false;
-                    emailHint.textContent = 'Если выбран мастер, email будет взят из его карточки.';
-                }
+            if (technicianSelect.value) {
+                emailInput.value = technicianEmail;
+                emailInput.readOnly = true;
+                emailHint.textContent = 'Email заблокирован, потому что берётся из карточки выбранного мастера.';
+            } else {
+                emailInput.readOnly = false;
+                emailHint.textContent = 'Если выбран мастер, email будет взят из его карточки.';
             }
+        }
 
-            technicianSelect.addEventListener('change', syncTechnicianEmail);
+        technicianSelect.addEventListener('change', syncTechnicianEmail);
 
-            syncTechnicianEmail();
-        })();
-    </script>
+        syncTechnicianEmail();
+    })();
+</script>
 }

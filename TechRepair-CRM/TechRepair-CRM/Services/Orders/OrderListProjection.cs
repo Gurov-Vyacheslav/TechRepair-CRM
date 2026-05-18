@@ -11,18 +11,20 @@ public static class OrderListProjection
         return await orders
             .OrderByDescending(o => o.CreatedAt)
             .Select(o => new OrderListItemResponse(
-                o.OrderId.Value,
-                o.OrderNumber,
-                o.CreatedAt.Value,
-                o.OrderStatus,
+                o.OrderId!.Value,
+                o.OrderNumber!,
+                o.CreatedAt!.Value,
+                o.OrderStatus!,
                 o.ClientFirstName + " " + o.ClientLastName,
-                o.ClientPhone,
-                o.DeviceType,
+                o.ClientPhone!,
+                o.DeviceType!,
                 o.Brand,
                 o.Model,
-                o.TotalCost.Value,
-                o.PaidAmount.Value,
-                o.RemainingAmount.Value
-            )).ToListAsync();
+                o.IsWarrantyRepair ?? false,
+                o.TotalCost ?? 0,
+                o.PaidAmount ?? 0,
+                o.RemainingAmount ?? 0
+            ))
+            .ToListAsync();
     }
 }

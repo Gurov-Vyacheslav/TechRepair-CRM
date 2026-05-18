@@ -28,7 +28,7 @@ public class UserAdminService : IUserAdminService
    public async Task<IReadOnlyList<UserListItemResponse>> GetUsersAsync(UserFilterRequest? filter = null)
     {
         var usersQuery = GetFilteredUsers(filter);
-        
+
         var usersData = await usersQuery
             .OrderBy(u => u.Email)
             .Select(u => new
@@ -44,24 +44,24 @@ public class UserAdminService : IUserAdminService
         if (!usersData.Any()) return new List<UserListItemResponse>();
 
         var userIds = usersData.Select(u => u.Id).ToList();
-        
+
         var rolesDictionary = await GetUsersRoles(userIds);
-        
+
         var technicianIds = usersData.Where(u => u.TechnicianId.HasValue)
                                      .Select(u => u.TechnicianId.Value)
                                      .Distinct()
                                      .ToList();
-        
+
         var technicians = await GetTechnicianFullNames(technicianIds);
-        
+
         var result = new List<UserListItemResponse>();
         foreach (var user in usersData)
         {
             var userRoles = rolesDictionary.GetValueOrDefault(user.Id) ?? new List<string>();
             var userRole = userRoles.FirstOrDefault();
-            if (filter?.Role != null && userRole != filter.Role) continue;
+            if (!string.IsNullOrWhiteSpace(filter?.Role) && userRole != filter.Role) continue;
 
-            var isLocked = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.Now;
+            var isBlocked = user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow;
             var technicianFullName = user.TechnicianId.HasValue
                 ? technicians.GetValueOrDefault(user.TechnicianId.Value)
                 : null;
@@ -72,7 +72,7 @@ public class UserAdminService : IUserAdminService
                 userRole,
                 user.TechnicianId,
                 technicianFullName,
-                isLocked
+                isBlocked
             ));
         }
 
@@ -89,14 +89,14 @@ public class UserAdminService : IUserAdminService
             {
                 var search = filter.Search.Trim().ToLower();
                 usersQuery = usersQuery.Where(u 
-                    => u.Email.ToLower().Contains(search) 
-                       || u.UserName.ToLower().Contains(search));
+                    => (u.Email != null && u.Email.ToLower().Contains(search)) 
+                       || (u.UserName != null && u.UserName.ToLower().Contains(search)));
             }
 
-            if (filter.IsLocked.HasValue)
+            if (filter.IsBlocked.HasValue)
             {
                 var now = DateTimeOffset.UtcNow;
-                if (filter.IsLocked.Value)
+                if (filter.IsBlocked.Value)
                     usersQuery = usersQuery.Where(u => u.LockoutEnd != null && u.LockoutEnd > now);
                 else
                     usersQuery = usersQuery.Where(u => u.LockoutEnd == null || u.LockoutEnd <= now);
@@ -153,7 +153,7 @@ public class UserAdminService : IUserAdminService
             Email = user.Email ?? string.Empty,
             Role = roles.FirstOrDefault() ?? string.Empty,
             TechnicianId = user.TechnicianId,
-            IsActive = user.LockoutEnd is null || user.LockoutEnd <= DateTimeOffset.UtcNow
+            IsBlocked = user.LockoutEnd is not null && user.LockoutEnd > DateTimeOffset.UtcNow
         };
     }
 
@@ -184,7 +184,7 @@ public class UserAdminService : IUserAdminService
         var roleResult = await _userManager.AddToRoleAsync(user, request.Role);
         ThrowIfFailed(roleResult);
     }
-    
+
     private async Task EnsureTechnicianNotAssignedAsync(int? technicianId)
     {
         if (technicianId is null) return;
@@ -195,7 +195,7 @@ public class UserAdminService : IUserAdminService
         if (technicianAlreadyLinked)
             throw new InvalidOperationException("Для выбранного мастера уже существует пользователь.");
     }
-    
+
     private async Task ValidateUserAsync(string email, string role, int? technicianId, string? currentUserId = null)
     {
         var existingUser = await _userManager.FindByEmailAsync(email);
@@ -205,7 +205,7 @@ public class UserAdminService : IUserAdminService
         if (role == "Technician" && technicianId is null)
             throw new InvalidOperationException("Для роли Technician нужно выбрать мастера.");
     }
-    
+
     private async Task<string> ResolveUserEmailAsync(int? technicianId, string requestEmail)
     {
         if (technicianId is null)
@@ -255,18 +255,18 @@ public class UserAdminService : IUserAdminService
         var addRoleResult = await _userManager.AddToRoleAsync(user, request.Role);
         ThrowIfFailed(addRoleResult);
 
-        if (request.IsActive)
-        {
-            var unlockResult = await _userManager.SetLockoutEndDateAsync(user, null);
-            ThrowIfFailed(unlockResult);
-        }
-        else
+        if (request.IsBlocked)
         {
             var lockResult = await _userManager.SetLockoutEndDateAsync(
                 user,
                 DateTimeOffset.UtcNow.AddYears(100));
 
             ThrowIfFailed(lockResult);
+        }
+        else
+        {
+            var unlockResult = await _userManager.SetLockoutEndDateAsync(user, null);
+            ThrowIfFailed(unlockResult);
         }
     }
 
@@ -299,7 +299,7 @@ public class UserAdminService : IUserAdminService
         var errors = string.Join("; ", result.Errors.Select(e => e.Description));
         throw new InvalidOperationException(errors);
     }
-    
+
     public async Task<string?> GetTechnicianEmailAsync(int technicianId)
     {
         return await _db.Technicians
@@ -307,55 +307,63 @@ public class UserAdminService : IUserAdminService
             .Select(t => t.Email)
             .FirstOrDefaultAsync();
     }
-    
+
+
+    public async Task<IReadOnlyList<TechnicianUserOptionResponse>> GetAvailableTechnicianOptionsForEditAsync(string userId)
+    {
+        var editedUser = await _userValidationService.GetUserOrThrowAsync(userId);
+        return await GetFilteredTechnicianOptionsAsync(
+            includeTechnicianId: editedUser.TechnicianId,
+            excludeUsed: true,
+            excludeUserId: userId);
+    }
+
     public async Task<IReadOnlyList<TechnicianUserOptionResponse>> GetTechnicianOptionsAsync()
-    {
-        return await _db.Technicians
-            .Where(t => t.IsActive)
-            .OrderBy(t => t.LastName)
-            .ThenBy(t => t.FirstName)
-            .Select(t => new TechnicianUserOptionResponse(
-                t.TechnicianId,
-                t.LastName + " " + t.FirstName,
-                t.Email
-            ))
-            .ToListAsync();
-    }
-    
+        => await GetFilteredTechnicianOptionsAsync(excludeUsed: false);
+
     public async Task<IReadOnlyList<TechnicianUserOptionResponse>> GetAvailableTechnicianOptionsForCreateAsync()
+        => await GetFilteredTechnicianOptionsAsync(excludeUsed: true, excludeUserId: null);
+    
+    private async Task<IReadOnlyList<TechnicianUserOptionResponse>> GetFilteredTechnicianOptionsAsync(
+        int? includeTechnicianId = null,
+        bool excludeUsed = true,
+        string? excludeUserId = null)
     {
-        var usedTechnicianIds = await GetUsedTechnicianIdsAsync();
+        var usedTechnicianIds = excludeUsed ? await GetUsedTechnicianIdsAsync(excludeUserId) : [];
+        var usedEmails = excludeUsed ? await GetUsedUserEmailsAsync(excludeUserId) : [];
 
-        var usedEmails = await GetUsedUserEmailsAsync();
+        var query = _db.Technicians.Where(t => t.IsActive);
 
-        return await _db.Technicians
-            .Where(t =>
-                t.IsActive &&
-                !usedTechnicianIds.Contains(t.TechnicianId) &&
-                !usedEmails.Contains(t.Email.ToLower()))
+        if (excludeUsed)
+        {
+            query = query.Where(t =>
+                (includeTechnicianId.HasValue && t.TechnicianId == includeTechnicianId.Value) ||
+                (!usedTechnicianIds.Contains(t.TechnicianId) && !usedEmails.Contains(t.Email.ToLower())));
+        }
+
+        return await query
             .OrderBy(t => t.LastName)
             .ThenBy(t => t.FirstName)
             .Select(t => new TechnicianUserOptionResponse(
                 t.TechnicianId,
                 t.LastName + " " + t.FirstName,
-                t.Email
-            ))
+                t.Email))
             .ToListAsync();
     }
 
-    private async Task<IReadOnlyList<int>> GetUsedTechnicianIdsAsync()
+    private async Task<IReadOnlyList<int>> GetUsedTechnicianIdsAsync(string? excludeUserId = null)
     {
-       return await _userManager.Users
-           .Where(u => u.TechnicianId != null)
-           .Select(u => u.TechnicianId!.Value)
-           .ToListAsync();
+        var query = _userManager.Users.Where(u => u.TechnicianId != null);
+        if (excludeUserId is not null)
+            query = query.Where(u => u.Id != excludeUserId);
+        return await query.Select(u => u.TechnicianId!.Value).ToListAsync();
     }
 
-    private async Task<IReadOnlyList<string>> GetUsedUserEmailsAsync()
+    private async Task<IReadOnlyList<string>> GetUsedUserEmailsAsync(string? excludeUserId = null)
     {
-        return await _userManager.Users
-            .Where(u => u.Email != null)
-            .Select(u => u.Email!.ToLower())
-            .ToListAsync();
+        var query = _userManager.Users.Where(u => u.Email != null);
+        if (excludeUserId is not null)
+            query = query.Where(u => u.Id != excludeUserId);
+        return await query.Select(u => u.Email!.ToLower()).ToListAsync();
     }
 }

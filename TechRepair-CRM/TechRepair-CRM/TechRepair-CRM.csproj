@@ -25,4 +25,10 @@
       <Folder Include="Views\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="req\Create.cshtml" />
+      <_ContentIncludedByDefault Remove="req\Edit.cshtml" />
+      <_ContentIncludedByDefault Remove="req\Index.cshtml" />
+    </ItemGroup>
+
 </Project>

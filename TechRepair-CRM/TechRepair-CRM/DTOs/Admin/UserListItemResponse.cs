@@ -6,5 +6,5 @@ public record UserListItemResponse(
     string? Role,
     int? TechnicianId,
     string? TechnicianFullName,
-    bool IsActive
+    bool IsBlocked
 );
