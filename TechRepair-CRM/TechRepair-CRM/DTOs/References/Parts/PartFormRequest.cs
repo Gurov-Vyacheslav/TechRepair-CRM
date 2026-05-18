@@ -14,9 +14,9 @@ public record PartFormRequest
     [Display(Name = "Производитель")]
     public string? Manufacturer { get; set; }
 
-    [Required(ErrorMessage = "Текущая цена обязательна.")]
-    [Range(0, double.MaxValue, ErrorMessage = "Текущая цена не может быть отрицательной.")]
-    [Display(Name = "Текущая цена")]
+    [Required(ErrorMessage = "Цена детали обязательна.")]
+    [Range(typeof(decimal), "0", "99999999.99", ErrorMessage = "Цена детали не может быть отрицательной.")]
+    [Display(Name = "Цена детали")]
     public decimal DefaultPrice { get; set; }
 
     [Display(Name = "Активна")]
