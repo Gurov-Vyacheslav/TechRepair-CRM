@@ -15,13 +15,15 @@ public partial class VwTechnicianWorkload
 
     public bool? IsActive { get; set; }
 
-    public long? AssignedServicesCount { get; set; }
+    public long? AssignedServiceRowsCount { get; set; }
 
-    public long? CompletedServicesCount { get; set; }
+    public long? AssignedServiceQuantity { get; set; }
 
-    public long? TotalServiceQuantity { get; set; }
+    public long? CompletedServiceQuantity { get; set; }
 
-    public decimal? TotalServiceAmount { get; set; }
+    public decimal? AssignedServiceAmount { get; set; }
+
+    public decimal? CompletedServiceAmount { get; set; }
 
     public DateTime? FirstCompletedAt { get; set; }
 

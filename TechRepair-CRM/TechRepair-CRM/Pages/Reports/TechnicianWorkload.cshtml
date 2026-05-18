@@ -11,8 +11,6 @@
     <a asp-page="/Reports/Index" class="btn btn-secondary">Назад к отчётам</a>
 </p>
 
-<p class="text-muted">Назначено строк услуг — количество позиций order_service. Количество с учётом quantity — сумма количества по назначенным услугам. Стоимость назначенных услуг — сумма quantity × price_at_moment.</p>
-
 @if (Model.Items.Count == 0)
 {
     <p>Данных пока нет.</p>
@@ -26,22 +24,28 @@ else
             <th>Специализация</th>
             <th>Активен</th>
             <th>Назначено строк услуг</th>
-            <th>Завершено услуг</th>
-            <th>Количество с учётом quantity</th>
+            <th>Назначено всего услуг</th>
+            <th>Завершено всего услуг</th>
             <th>Стоимость назначенных услуг</th>
+            <th>Стоимость завершённых услуг</th>
+            <th>Первое завершение</th>
+            <th>Последнее завершение</th>
         </tr>
         </thead>
         <tbody>
         @foreach (var item in Model.Items)
         {
             <tr>
-                <td>@item.LastName @item.FirstName</td>
-                <td>@item.Specialization</td>
+                <td>@item.FullName</td>
+                <td>@(item.Specialization ?? "—")</td>
                 <td>@(item.IsActive ? "Да" : "Нет")</td>
-                <td>@item.AssignedServicesCount</td>
-                <td>@item.CompletedServicesCount</td>
-                <td>@item.TotalServiceQuantity</td>
-                <td>@item.TotalServiceAmount</td>
+                <td>@item.AssignedServiceRowsCount</td>
+                <td>@item.AssignedServiceQuantity</td>
+                <td>@item.CompletedServiceQuantity</td>
+                <td>@item.AssignedServiceAmount</td>
+                <td>@item.CompletedServiceAmount</td>
+                <td>@(item.FirstCompletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
+                <td>@(item.LastCompletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "—")</td>
             </tr>
         }
         </tbody>

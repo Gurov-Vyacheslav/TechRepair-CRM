@@ -2,12 +2,14 @@
 
 public record TechnicianWorkloadReportItem(
     int TechnicianId,
-    string FirstName,
-    string LastName,
+    string FullName,
     string? Specialization,
     bool IsActive,
-    long AssignedServicesCount,
-    long CompletedServicesCount,
-    long TotalServiceQuantity,
-    decimal TotalServiceAmount
+    long AssignedServiceRowsCount,
+    long AssignedServiceQuantity,
+    long CompletedServiceQuantity,
+    decimal AssignedServiceAmount,
+    decimal CompletedServiceAmount,
+    DateTime? FirstCompletedAt,
+    DateTime? LastCompletedAt
 );

@@ -787,8 +787,15 @@ public partial class RepairServiceDbContext : DbContext
                 .HasNoKey()
                 .ToView("vw_technician_workload");
 
-            entity.Property(e => e.AssignedServicesCount).HasColumnName("assigned_services_count");
-            entity.Property(e => e.CompletedServicesCount).HasColumnName("completed_services_count");
+            entity.Property(e => e.AssignedServiceAmount)
+                .HasPrecision(10, 2)
+                .HasColumnName("assigned_service_amount");
+            entity.Property(e => e.AssignedServiceQuantity).HasColumnName("assigned_service_quantity");
+            entity.Property(e => e.AssignedServiceRowsCount).HasColumnName("assigned_service_rows_count");
+            entity.Property(e => e.CompletedServiceAmount)
+                .HasPrecision(10, 2)
+                .HasColumnName("completed_service_amount");
+            entity.Property(e => e.CompletedServiceQuantity).HasColumnName("completed_service_quantity");
             entity.Property(e => e.FirstCompletedAt)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("first_completed_at");
@@ -806,10 +813,6 @@ public partial class RepairServiceDbContext : DbContext
                 .HasMaxLength(100)
                 .HasColumnName("specialization");
             entity.Property(e => e.TechnicianId).HasColumnName("technician_id");
-            entity.Property(e => e.TotalServiceAmount)
-                .HasPrecision(10, 2)
-                .HasColumnName("total_service_amount");
-            entity.Property(e => e.TotalServiceQuantity).HasColumnName("total_service_quantity");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -42,14 +42,16 @@ public class ReportQueryService : IReportQueryService
             .ThenBy(t => t.FirstName)
             .Select(t => new TechnicianWorkloadReportItem(
                 t.TechnicianId!.Value,
-                t.FirstName!,
-                t.LastName!,
+                t.LastName + " " + t.FirstName,
                 t.Specialization,
-                t.IsActive!.Value,
-                t.AssignedServicesCount!.Value,
-                t.CompletedServicesCount!.Value,
-                t.TotalServiceQuantity!.Value,
-                t.TotalServiceAmount!.Value
+                t.IsActive ?? false,
+                t.AssignedServiceRowsCount ?? 0,
+                t.AssignedServiceQuantity ?? 0,
+                t.CompletedServiceQuantity ?? 0,
+                t.AssignedServiceAmount ?? 0,
+                t.CompletedServiceAmount ?? 0,
+                t.FirstCompletedAt,
+                t.LastCompletedAt
             ))
             .ToListAsync();
     }
