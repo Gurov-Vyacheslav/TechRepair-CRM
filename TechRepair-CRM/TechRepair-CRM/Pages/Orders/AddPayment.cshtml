@@ -54,25 +54,5 @@
 </div>
 
 @section Scripts {
-    <script>
-        (function () {
-            const paymentMethodSelect = document.getElementById('paymentMethodSelect');
-            const transactionNumberField = document.getElementById('transactionNumberField');
-            const transactionNumberInput = document.getElementById('transactionNumberInput');
-
-            function syncTransactionNumberField() {
-                const isCash = paymentMethodSelect.value === 'Cash';
-
-                transactionNumberField.style.display = isCash ? 'none' : '';
-                
-                if (isCash) {
-                    transactionNumberInput.value = '';
-                }
-            }
-
-            paymentMethodSelect.addEventListener('change', syncTransactionNumberField);
-
-            syncTransactionNumberField();
-        })();
-    </script>
+    <script src="~/js/order-payment-form.js" asp-append-version="true"></script>
 }
